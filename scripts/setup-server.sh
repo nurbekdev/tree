@@ -187,7 +187,7 @@ server {
         proxy_set_header Host $host;
     }
 
-    # Frontend (Next.js)
+    # Frontend (Next.js) - must be last location block
     location / {
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
@@ -198,13 +198,33 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        proxy_redirect off;
+        
+        # Next.js specific settings
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 
-    # Next.js static files
-    location /_next/static {
+    # Next.js static files and assets
+    location /_next/ {
         proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
         proxy_cache_valid 200 60m;
         add_header Cache-Control "public, immutable";
+    }
+    
+    # Next.js API routes (if any)
+    location /_next/webpack-hmr {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
     }
 }
 NGINX_EOF

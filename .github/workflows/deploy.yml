@@ -18,12 +18,34 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          
+          # Save SSH key
           echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          
+          # Add server to known hosts
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 644 ~/.ssh/known_hosts
-          # Test SSH connection
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} echo "SSH connection successful"
+          
+          # Debug: Check if key file exists and has content
+          echo "SSH key file exists: $(test -f ~/.ssh/id_rsa && echo 'yes' || echo 'no')"
+          echo "SSH key file size: $(wc -c < ~/.ssh/id_rsa) bytes"
+          echo "SSH key starts with: $(head -c 50 ~/.ssh/id_rsa)"
+          
+          # Test SSH connection with verbose output
+          echo "Testing SSH connection..."
+          ssh -v -i ~/.ssh/id_rsa \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -o ConnectTimeout=10 \
+            -o BatchMode=yes \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            echo "SSH connection successful" || {
+              echo "SSH connection failed. Checking key format..."
+              head -1 ~/.ssh/id_rsa
+              exit 1
+            }
       
       - name: Deploy to server
         env:
@@ -31,7 +53,12 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH }}
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'DEPLOY_EOF'
+          ssh -i ~/.ssh/id_rsa \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -o ConnectTimeout=30 \
+            -o BatchMode=yes \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'DEPLOY_EOF'
             set -e
             echo "=========================================="
             echo "Starting deployment..."
@@ -48,6 +75,21 @@ jobs:
             
             echo "Stopping existing containers..."
             docker compose -f docker-compose.prod.yml down || true
+            
+            echo "Removing old containers..."
+            docker compose -f docker-compose.prod.yml rm -f || true
+            
+            echo "Checking for processes using ports 3000 and 3001..."
+            # Kill processes on port 3000 (backend)
+            lsof -ti:3000 | xargs -r kill -9 2>/dev/null || echo "No process found on port 3000"
+            # Kill processes on port 3001 (frontend)
+            lsof -ti:3001 | xargs -r kill -9 2>/dev/null || echo "No process found on port 3001"
+            
+            echo "Waiting for ports to be released..."
+            sleep 3
+            
+            echo "Cleaning up Docker resources..."
+            docker system prune -f || true
             
             echo "Building new containers..."
             docker compose -f docker-compose.prod.yml build --no-cache
