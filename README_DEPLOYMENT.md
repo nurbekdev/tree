@@ -68,27 +68,35 @@ ssh-copy-id -i ~/.ssh/deploy_key.pub root@209.38.61.156
 
 ### GitHub Secrets qo'shish
 
-GitHub repository → Settings → Secrets and variables → Actions
+**Batafsil qo'llanma**: `GITHUB_ACTIONS_SETUP.md` faylini ko'ring.
 
-Quyidagi secret'larni qo'shing:
+**Tezkor qadamlar**:
 
-- **SERVER_HOST**: `209.38.61.156`
-- **SERVER_USER**: `root`
-- **SERVER_PATH**: `/var/www/tree-monitor`
-- **SERVER_SSH_KEY**: `~/.ssh/deploy_key` faylning to'liq mazmuni
-
+1. SSH key yaratish:
 ```bash
-cat ~/.ssh/deploy_key
+ssh-keygen -t rsa -b 4096 -C "github-actions-deploy" -f ~/.ssh/github_actions_deploy
 ```
+
+2. Server'ga qo'shish:
+```bash
+ssh-copy-id -i ~/.ssh/github_actions_deploy.pub root@209.38.61.156
+```
+
+3. GitHub Secrets (Repository → Settings → Secrets):
+   - **SERVER_HOST**: `209.38.61.156`
+   - **SERVER_USER**: `root`
+   - **SERVER_PATH**: `/var/www/tree-monitor`
+   - **SERVER_SSH_KEY**: `cat ~/.ssh/github_actions_deploy` (to'liq private key)
 
 ### Avtomatik Deploy
 
 Endi har safar `main` yoki `master` branch'ga push qilganda, avtomatik deploy bo'ladi!
 
-## 📍 API Endpoints
+## 📍 Endpoints
 
 Deploy qilingandan keyin:
 
+- **Frontend**: `http://64.225.20.211`
 - **API**: `http://64.225.20.211/api`
 - **Health Check**: `http://64.225.20.211/health`
 
@@ -124,6 +132,10 @@ docker compose -f docker-compose.prod.yml logs -f postgres
 2. ✅ SSL sozlash (certbot)
 3. ✅ Firewall yoqish (ufw)
 4. ✅ Regular updates
+
+## 🎨 Frontend
+
+Frontend avtomatik backend bilan birga deploy bo'ladi. Batafsil ma'lumot uchun `FRONTEND_DEPLOYMENT.md` faylini ko'ring.
 
 ## 📝 Batafsil ma'lumot
 

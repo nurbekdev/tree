@@ -124,6 +124,22 @@ services:
     networks:
       - tree-monitor-network
 
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://64.225.20.211/api
+    container_name: tree-monitor-frontend-prod
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://64.225.20.211/api
+    ports:
+      - "127.0.0.1:3001:3001"
+    restart: unless-stopped
+    networks:
+      - tree-monitor-network
+
 volumes:
   postgres_data:
 
@@ -169,6 +185,26 @@ server {
     location /health {
         proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
+    }
+
+    # Frontend (Next.js)
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Next.js static files
+    location /_next/static {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_cache_valid 200 60m;
+        add_header Cache-Control "public, immutable";
     }
 }
 NGINX_EOF

@@ -82,40 +82,31 @@ curl http://localhost:3000/health
 
 ## GitHub Actions CI/CD Setup
 
-### 1. Generate SSH Key for Deployment
+Batafsil qo'llanma uchun `GITHUB_ACTIONS_SETUP.md` faylini ko'ring.
 
-On your local machine:
+### Tezkor Sozlash:
 
+1. **SSH Key yaratish**:
 ```bash
-ssh-keygen -t rsa -b 4096 -C "deploy@tree-monitor" -f ~/.ssh/deploy_key
+ssh-keygen -t rsa -b 4096 -C "github-actions-deploy" -f ~/.ssh/github_actions_deploy
 ```
 
-### 2. Add Public Key to Server
-
+2. **Public Key'ni Server'ga qo'shish**:
 ```bash
-# Copy public key to server
-ssh-copy-id -i ~/.ssh/deploy_key.pub root@209.38.61.156
+ssh-copy-id -i ~/.ssh/github_actions_deploy.pub root@209.38.61.156
+# Password: Polatov2004!@#Nur
 ```
 
-Or manually:
+3. **GitHub Secrets qo'shish** (Repository → Settings → Secrets):
+   - **SERVER_HOST**: `209.38.61.156`
+   - **SERVER_USER**: `root`
+   - **SERVER_PATH**: `/var/www/tree-monitor`
+   - **SERVER_SSH_KEY**: `cat ~/.ssh/github_actions_deploy` (to'liq private key)
+
+4. **Test qilish**:
 ```bash
-cat ~/.ssh/deploy_key.pub | ssh root@209.38.61.156 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
-```
-
-### 3. Add GitHub Secrets
-
-Go to your GitHub repository → Settings → Secrets and variables → Actions
-
-Add the following secrets:
-
-- **SERVER_HOST**: `209.38.61.156` (or `64.225.20.211`)
-- **SERVER_USER**: `root`
-- **SERVER_PATH**: `/var/www/tree-monitor`
-- **SERVER_SSH_KEY**: Contents of `~/.ssh/deploy_key` (private key)
-
-To get private key:
-```bash
-cat ~/.ssh/deploy_key
+ssh -i ~/.ssh/github_actions_deploy root@209.38.61.156
+# Password so'ralmasligi kerak!
 ```
 
 ### 4. Clone Repository on Server
@@ -245,6 +236,19 @@ systemctl reload nginx
 # Check status
 systemctl status nginx
 ```
+
+## Frontend Deployment
+
+Frontend avtomatik backend bilan birga deploy bo'ladi. Agar alohida deploy qilish kerak bo'lsa:
+
+```bash
+cd /var/www/tree-monitor/backend
+docker compose -f docker-compose.prod.yml up -d frontend
+```
+
+Frontend'ga kirish: `http://64.225.20.211`
+
+Batafsil ma'lumot uchun `FRONTEND_DEPLOYMENT.md` faylini ko'ring.
 
 ## Base Station Firmware Update
 
