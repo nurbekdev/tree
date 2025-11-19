@@ -1,0 +1,81 @@
+{
+  "common": {
+    "login": "Kirish",
+    "logout": "Chiqish",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "edit": "Tahrirlash",
+    "delete": "O'chirish",
+    "close": "Yopish",
+    "search": "Qidirish",
+    "filter": "Filter",
+    "loading": "Yuklanmoqda...",
+    "error": "Xatolik",
+    "success": "Muvaffaqiyatli"
+  },
+  "auth": {
+    "title": "Daraxt Monitoring Tizimi",
+    "username": "Foydalanuvchi nomi",
+    "password": "Parol",
+    "loginButton": "Tizimga kirish",
+    "invalidCredentials": "Noto'g'ri foydalanuvchi nomi yoki parol",
+    "loginRequired": "Tizimga kirish talab qilinadi"
+  },
+  "dashboard": {
+    "title": "Boshqaruv paneli",
+    "trees": "Daraxtlar",
+    "alerts": "Ogohlantirishlar",
+    "lastSeen": "Oxirgi ko'rilgan",
+    "status": "Holat",
+    "statusOk": "Yaxshi",
+    "statusAlert": "Ogohlantirish",
+    "viewDetails": "Batafsil",
+    "acknowledge": "Tasdiqlash",
+    "noData": "Ma'lumot yo'q"
+  },
+  "tree": {
+    "title": "Daraxt ma'lumotlari",
+    "treeId": "Daraxt ID",
+    "species": "Turi",
+    "plantedYear": "Ekilgan yil",
+    "notes": "Eslatmalar",
+    "location": "Joylashuv",
+    "latitude": "Kenglik",
+    "longitude": "Uzunlik",
+    "ownerContact": "Egasi aloqa",
+    "telemetry": "Telemetriya",
+    "temperature": "Harorat",
+    "humidity": "Namlik",
+    "smoke": "Tutun",
+    "mpu": "Akselerometr",
+    "acceleration": "Tezlanish",
+    "gyro": "Gyroskop",
+    "tilt": "Og'ish",
+    "cutDetected": "Kesilgan",
+    "history": "Tarix",
+    "last24Hours": "Oxirgi 24 soat",
+    "last7Days": "Oxirgi 7 kun",
+    "last30Days": "Oxirgi 30 kun"
+  },
+  "alerts": {
+    "title": "Ogohlantirishlar",
+    "active": "Faol",
+    "acknowledged": "Tasdiqlangan",
+    "type": "Turi",
+    "level": "Daraja",
+    "message": "Xabar",
+    "createdAt": "Yaratilgan vaqt",
+    "acknowledgedAt": "Tasdiqlangan vaqt",
+    "noAlerts": "Ogohlantirishlar yo'q",
+    "newAlert": "Yangi ogohlantirish",
+    "smoke": "Tutun",
+    "cut": "Kesilgan",
+    "tilt": "Og'ish"
+  },
+  "notifications": {
+    "newAlert": "Yangi ogohlantirish",
+    "treeAlert": "Daraxt {treeId} uchun ogohlantirish",
+    "alertAcknowledged": "Ogohlantirish tasdiqlandi"
+  }
+}
+

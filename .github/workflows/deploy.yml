@@ -1,0 +1,78 @@
+name: Deploy to Production Server
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: Deploy to server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'DEPLOY_EOF'
+            set -e
+            echo "=========================================="
+            echo "Starting deployment..."
+            echo "=========================================="
+            
+            cd ${{ secrets.SERVER_PATH }}
+            
+            echo "Pulling latest code..."
+            git fetch origin
+            git reset --hard origin/main || git reset --hard origin/master
+            
+            echo "Deploying backend..."
+            cd backend
+            
+            echo "Stopping existing containers..."
+            docker compose -f docker-compose.prod.yml down || true
+            
+            echo "Building new containers..."
+            docker compose -f docker-compose.prod.yml build --no-cache
+            
+            echo "Starting containers..."
+            docker compose -f docker-compose.prod.yml up -d
+            
+            echo "Waiting for services to be ready..."
+            sleep 10
+            
+            echo "Checking service status..."
+            docker compose -f docker-compose.prod.yml ps
+            
+            echo "Recent logs:"
+            docker compose -f docker-compose.prod.yml logs --tail=50
+            
+            echo ""
+            echo "=========================================="
+            echo "Deployment complete!"
+            echo "=========================================="
+          DEPLOY_EOF
+      
+      - name: Health Check
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          echo "Waiting for services to start..."
+          sleep 15
+          echo "Checking API health..."
+          curl -f http://${{ secrets.SERVER_HOST }}/health || echo "Health check failed, but deployment may still be in progress"
+

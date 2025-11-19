@@ -1,0 +1,13 @@
+{
+  "name": "tree-monitor-tests",
+  "version": "1.0.0",
+  "description": "Test scripts for tree monitoring system",
+  "scripts": {
+    "simulate": "node simulate_transmitter.js",
+    "test-alert": "node test_alert.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
+
