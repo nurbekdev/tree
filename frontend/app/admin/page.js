@@ -71,6 +71,9 @@ const translations = {
   lastActivity: 'Oxirgi faollik',
   deviceInfo: 'Qurilma ma\'lumoti',
   noSessions: 'Sessiyalar mavjud emas',
+  sessionsTableNotExists: 'User sessions jadvali mavjud emas. Migration ishga tushiring.',
+  sessionsError: 'Sessiyalarni yuklashda xatolik',
+  refreshSessions: 'Yangilash',
 }
 
 export default function AdminPage() {
@@ -90,6 +93,8 @@ export default function AdminPage() {
   const [esp8266Config, setEsp8266Config] = useState(null)
   const [trees, setTrees] = useState([])
   const [userSessions, setUserSessions] = useState([])
+  const [sessionsError, setSessionsError] = useState(null)
+  const [sessionsLoading, setSessionsLoading] = useState(false)
   const [copiedField, setCopiedField] = useState(null)
   const router = useRouter()
 
@@ -379,25 +384,96 @@ export default function AdminPage() {
   }
 
   const copyToClipboard = async (text, fieldName) => {
+    if (!text || text === 'Not available' || text === 'Not set') {
+      toast.error('Nusxalash uchun ma\'lumot mavjud emas')
+      return
+    }
+
     try {
-      await navigator.clipboard.writeText(text)
-      setCopiedField(fieldName)
-      toast.success(translations.copied)
-      setTimeout(() => setCopiedField(null), 2000)
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text)
+        setCopiedField(fieldName)
+        toast.success(translations.copied)
+        setTimeout(() => setCopiedField(null), 2000)
+        return
+      }
+
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+
+      try {
+        const successful = document.execCommand('copy')
+        if (successful) {
+          setCopiedField(fieldName)
+          toast.success(translations.copied)
+          setTimeout(() => setCopiedField(null), 2000)
+        } else {
+          throw new Error('execCommand failed')
+        }
+      } catch (err) {
+        console.error('Fallback copy failed:', err)
+        // Last resort: show text in prompt
+        prompt('Ma\'lumotni nusxalash uchun quyidagi matnni tanlang va Ctrl+C bosing:', text)
+        toast.error('Avtomatik nusxalash ishlamadi. Matn tanlandi.')
+      } finally {
+        document.body.removeChild(textArea)
+      }
     } catch (error) {
       console.error('Failed to copy:', error)
-      toast.error('Nusxalashda xatolik')
+      // Show text in prompt as last resort
+      prompt('Ma\'lumotni nusxalash uchun quyidagi matnni tanlang va Ctrl+C bosing:', text)
+      toast.error('Nusxalashda xatolik. Matn tanlandi.')
     }
   }
 
-  const loadUserSessions = async () => {
+  const loadUserSessions = async (showLoading = true) => {
+    if (showLoading) {
+      setSessionsLoading(true)
+    }
+    setSessionsError(null)
+    
     try {
       const data = await adminsAPI.getSessions()
-      setUserSessions(data)
+      if (Array.isArray(data)) {
+        setUserSessions(data)
+        setSessionsError(null)
+      } else {
+        setUserSessions([])
+        setSessionsError(null)
+      }
     } catch (error) {
       console.error('Error loading user sessions:', error)
-      // If endpoint doesn't exist, set empty array
-      setUserSessions([])
+      
+      // Check if it's a 404 or table doesn't exist
+      if (error.response?.status === 404) {
+        setSessionsError(translations.sessionsTableNotExists)
+        setUserSessions([])
+      } else if (error.response?.status === 500) {
+        // Server error - might be table doesn't exist
+        const errorMessage = error.response?.data?.error || error.message
+        if (errorMessage?.includes('does not exist') || errorMessage?.includes('42P01')) {
+          setSessionsError(translations.sessionsTableNotExists)
+        } else {
+          setSessionsError(translations.sessionsError)
+        }
+        setUserSessions([])
+      } else {
+        // Other errors
+        setSessionsError(translations.sessionsError)
+        setUserSessions([])
+      }
+    } finally {
+      if (showLoading) {
+        setSessionsLoading(false)
+      }
     }
   }
 
@@ -643,14 +719,58 @@ export default function AdminPage() {
 
         {/* User Sessions */}
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="text-2xl">👥</span>
-            {translations.userSessions}
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <span className="text-2xl">👥</span>
+              {translations.userSessions}
+            </h2>
+            <button
+              onClick={() => loadUserSessions(true)}
+              disabled={sessionsLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {sessionsLoading ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  {translations.loading}
+                </>
+              ) : (
+                <>
+                  <span>🔄</span>
+                  {translations.refreshSessions}
+                </>
+              )}
+            </button>
+          </div>
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            {userSessions.length === 0 ? (
+            {sessionsError ? (
+              <div className="p-6">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-yellow-600 text-xl">⚠️</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-yellow-800 mb-1">
+                        {sessionsError}
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        Migration ishga tushirish uchun: <code className="bg-yellow-100 px-2 py-1 rounded">npm run migrate</code>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : sessionsLoading ? (
               <div className="p-8 text-center text-gray-500">
-                {translations.noSessions}
+                <div className="animate-spin text-2xl mb-2">⏳</div>
+                {translations.loading}
+              </div>
+            ) : userSessions.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <div className="text-4xl mb-2">👥</div>
+                <p className="text-sm">{translations.noSessions}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Login qilingan foydalanuvchilar sessiyalari shu yerda ko'rinadi
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -934,4 +1054,5 @@ export default function AdminPage() {
     </div>
   )
 }
+
 

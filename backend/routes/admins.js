@@ -217,6 +217,22 @@ router.delete('/:id', async (req, res) => {
 // GET /api/v1/admins/sessions - Get all user sessions
 router.get('/sessions', async (req, res) => {
   try {
+    // First check if table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_sessions'
+      )
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      return res.status(404).json({ 
+        error: 'User sessions table does not exist',
+        hint: 'Please run migration: npm run migrate'
+      });
+    }
+
     const result = await pool.query(
       `SELECT 
         s.id,
@@ -237,12 +253,26 @@ router.get('/sessions', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user sessions:', error);
     
-    // If table doesn't exist, return empty array
+    // If table doesn't exist, return 404 with helpful message
     if (error.code === '42P01') {
-      return res.json([]);
+      return res.status(404).json({ 
+        error: 'User sessions table does not exist',
+        hint: 'Please run migration: npm run migrate'
+      });
     }
     
-    res.status(500).json({ error: 'Internal server error' });
+    // If column doesn't exist (partial migration)
+    if (error.code === '42703') {
+      return res.status(500).json({ 
+        error: 'User sessions table structure is incomplete',
+        hint: 'Please run migration: npm run migrate'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
   }
 });
 
