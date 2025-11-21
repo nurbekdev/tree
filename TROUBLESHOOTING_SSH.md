@@ -146,7 +146,7 @@ ssh -i ~/.ssh/github_actions_deploy \
   -o StrictHostKeyChecking=no \
   -o BatchMode=yes \
   root@209.38.61.156 \
-  "cd /var/www/tree-monitor && pwd && ls -la"
+  "cd /var/www/tree-monitor/tree && pwd && ls -la"
 ```
 
 ## 📞 Yordam

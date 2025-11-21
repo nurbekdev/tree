@@ -32,7 +32,7 @@ chmod +x setup-server.sh
 ### 3. Configure Environment Variables
 
 ```bash
-cd /var/www/tree-monitor/backend
+cd /var/www/tree-monitor/tree/backend
 nano .env
 ```
 
@@ -63,7 +63,7 @@ openssl rand -hex 32  # For JWT_SECRET
 ### 4. Start Application
 
 ```bash
-cd /var/www/tree-monitor/backend
+cd /var/www/tree-monitor/tree/backend
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -100,7 +100,7 @@ ssh-copy-id -i ~/.ssh/github_actions_deploy.pub root@209.38.61.156
 3. **GitHub Secrets qo'shish** (Repository → Settings → Secrets):
    - **SERVER_HOST**: `209.38.61.156`
    - **SERVER_USER**: `root`
-   - **SERVER_PATH**: `/var/www/tree-monitor`
+   - **SERVER_PATH**: `/var/www/tree-monitor/tree`
    - **SERVER_SSH_KEY**: `cat ~/.ssh/github_actions_deploy` (to'liq private key)
 
 4. **Test qilish**:
@@ -112,7 +112,7 @@ ssh -i ~/.ssh/github_actions_deploy root@209.38.61.156
 ### 4. Clone Repository on Server
 
 ```bash
-cd /var/www/tree-monitor
+cd /var/www/tree-monitor/tree
 git clone <your-github-repo-url> .
 ```
 
@@ -130,14 +130,14 @@ If you need to deploy manually:
 
 ```bash
 ssh root@209.38.61.156
-cd /var/www/tree-monitor
+cd /var/www/tree-monitor/tree
 ./scripts/deploy.sh
 ```
 
 Or use the deployment script directly:
 
 ```bash
-cd /var/www/tree-monitor
+cd /var/www/tree-monitor/tree
 git pull origin main
 cd backend
 docker compose -f docker-compose.prod.yml down
@@ -242,7 +242,7 @@ systemctl status nginx
 Frontend avtomatik backend bilan birga deploy bo'ladi. Agar alohida deploy qilish kerak bo'lsa:
 
 ```bash
-cd /var/www/tree-monitor/backend
+cd /var/www/tree-monitor/tree/backend
 docker compose -f docker-compose.prod.yml up -d frontend
 ```
 

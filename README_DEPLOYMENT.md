@@ -26,7 +26,7 @@ chmod +x setup-server.sh
 ### 3. Repository'ni klonlash
 
 ```bash
-cd /var/www/tree-monitor
+cd /var/www/tree-monitor/tree
 git clone <your-github-repo-url> .
 ```
 
@@ -85,7 +85,7 @@ ssh-copy-id -i ~/.ssh/github_actions_deploy.pub root@209.38.61.156
 3. GitHub Secrets (Repository → Settings → Secrets):
    - **SERVER_HOST**: `209.38.61.156`
    - **SERVER_USER**: `root`
-   - **SERVER_PATH**: `/var/www/tree-monitor`
+   - **SERVER_PATH**: `/var/www/tree-monitor/tree`
    - **SERVER_SSH_KEY**: `cat ~/.ssh/github_actions_deploy` (to'liq private key)
 
 ### Avtomatik Deploy

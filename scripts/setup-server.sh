@@ -36,7 +36,7 @@ if [ "$USER" != "root" ]; then
 fi
 
 # Create application directory
-APP_DIR="/var/www/tree-monitor"
+APP_DIR="/var/www/tree-monitor/tree"
 echo "Creating application directory: $APP_DIR"
 mkdir -p $APP_DIR
 cd $APP_DIR

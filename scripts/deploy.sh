@@ -5,7 +5,7 @@
 
 set -e
 
-APP_DIR="/var/www/tree-monitor"
+APP_DIR="/var/www/tree-monitor/tree"
 cd $APP_DIR
 
 echo "=========================================="
@@ -56,6 +56,35 @@ docker compose -f docker-compose.prod.yml ps
 echo "Recent logs:"
 docker compose -f docker-compose.prod.yml logs --tail=50
 
+# Fix Nginx configuration
+echo ""
+echo "Configuring Nginx..."
+if [ -f ../scripts/fix-nginx.sh ]; then
+    chmod +x ../scripts/fix-nginx.sh
+    ../scripts/fix-nginx.sh
+else
+    echo "⚠️  Nginx fix script topilmadi, qo'lda sozlash kerak"
+fi
+
+# Wait a bit more for services to be fully ready
+echo "Waiting for services to be fully ready..."
+sleep 5
+
+# Test services
+echo ""
+echo "Testing services..."
+if curl -s http://127.0.0.1:3000/health > /dev/null; then
+    echo "✓ Backend is responding"
+else
+    echo "⚠️  Backend not responding yet"
+fi
+
+if curl -s http://127.0.0.1:3001 > /dev/null; then
+    echo "✓ Frontend is responding"
+else
+    echo "⚠️  Frontend not responding yet"
+fi
+
 echo ""
 echo "=========================================="
 echo "Deployment complete!"
@@ -66,5 +95,8 @@ echo "  docker compose -f docker-compose.prod.yml ps"
 echo ""
 echo "View logs with:"
 echo "  docker compose -f docker-compose.prod.yml logs -f"
+echo ""
+echo "If you see 'Not Found' error, run:"
+echo "  cd /var/www/tree-monitor/tree && ./scripts/fix-nginx.sh"
 echo ""
 

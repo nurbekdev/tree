@@ -107,6 +107,93 @@ jobs:
             docker compose -f docker-compose.prod.yml logs --tail=50
             
             echo ""
+            echo "Fixing Nginx configuration..."
+            if [ -f ../scripts/fix-nginx.sh ]; then
+                chmod +x ../scripts/fix-nginx.sh
+                ../scripts/fix-nginx.sh
+            else
+                echo "⚠️  Nginx fix script not found, configuring manually..."
+                # Create Nginx config if it doesn't exist
+                cat > /etc/nginx/sites-available/tree-monitor << 'NGINX_EOF'
+server {
+    listen 80;
+    server_name _;
+    client_max_body_size 10M;
+    location /api {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_redirect off;
+    }
+    location /socket.io {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /health {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+    }
+    location /_next/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_cache_valid 200 60m;
+        add_header Cache-Control "public, immutable";
+    }
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_redirect off;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+NGINX_EOF
+                # Enable site if not already enabled
+                if [ ! -f /etc/nginx/sites-enabled/tree-monitor ]; then
+                    ln -s /etc/nginx/sites-available/tree-monitor /etc/nginx/sites-enabled/
+                fi
+                # Test and reload nginx
+                nginx -t && systemctl reload nginx
+            fi
+            
+            echo ""
+            echo "Testing services..."
+            sleep 5
+            if curl -s http://127.0.0.1:3000/health > /dev/null; then
+                echo "✓ Backend is responding"
+            else
+                echo "⚠️  Backend not responding yet"
+            fi
+            if curl -s http://127.0.0.1:3001 > /dev/null; then
+                echo "✓ Frontend is responding"
+            else
+                echo "⚠️  Frontend not responding yet"
+            fi
+            
+            echo ""
             echo "=========================================="
             echo "Deployment complete!"
             echo "=========================================="

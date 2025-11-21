@@ -72,7 +72,7 @@ root
 
 #### SERVER_PATH
 ```
-/var/www/tree-monitor
+/var/www/tree-monitor/tree
 ```
 
 #### SERVER_SSH_KEY
@@ -95,11 +95,11 @@ cat ~/.ssh/github_actions_deploy
 ssh root@209.38.61.156
 
 # Repository'ni klonlash (agar hali klonlanmagan bo'lsa)
-cd /var/www/tree-monitor
+cd /var/www/tree-monitor/tree
 git clone <your-github-repo-url> .
 
 # Yoki mavjud repository'ni yangilash
-cd /var/www/tree-monitor
+cd /var/www/tree-monitor/tree
 git remote set-url origin <your-github-repo-url>
 ```
 
@@ -157,7 +157,7 @@ ufw allow 22/tcp
 **Yechim**:
 ```bash
 ssh root@209.38.61.156
-cd /var/www/tree-monitor
+cd /var/www/tree-monitor/tree
 ls -la
 # Agar bo'sh bo'lsa:
 git clone <your-github-repo-url> .
@@ -210,7 +210,7 @@ Deploy'ni test qilish uchun:
 ```bash
 # Manual deploy test
 ssh -i ~/.ssh/github_actions_deploy root@209.38.61.156 << 'EOF'
-cd /var/www/tree-monitor
+cd /var/www/tree-monitor/tree
 git pull origin main
 cd backend
 docker compose -f docker-compose.prod.yml up -d --build
