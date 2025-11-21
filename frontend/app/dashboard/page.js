@@ -434,22 +434,22 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-blue-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-md">
-                <Logo size={40} />
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-2 sm:py-4">
+          <div className="flex justify-between items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+              <div className="p-1.5 sm:p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-md flex-shrink-0">
+                <Logo size={32} className="sm:w-10 sm:h-10" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent leading-tight truncate">
                   {translations.title}
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">{translations.agency}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 line-clamp-2 hidden sm:block">{translations.agency}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
               {user && (
-                <div className="text-right hidden sm:block">
+                <div className="text-right hidden md:block">
                   <div className="text-sm font-medium text-gray-900">{translations.welcome}, {user.username}</div>
                   <div className="text-xs text-gray-500 capitalize">{user.role}</div>
                 </div>
@@ -457,30 +457,36 @@ export default function DashboardPage() {
               {user?.role === 'admin' && (
                 <Link
                   href="/admin"
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-base"
+                  title="Admin"
                 >
-                  ⚙️ Admin
+                  <span className="hidden sm:inline">⚙️ </span>
+                  <span className="sm:hidden">⚙️</span>
+                  <span className="hidden sm:inline">Admin</span>
                 </Link>
               )}
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-base"
+                title="Chiqish"
               >
-                🚪 {translations.logout}
+                <span className="hidden sm:inline">🚪 </span>
+                <span className="sm:hidden">🚪</span>
+                <span className="hidden sm:inline">{translations.logout}</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Statistics Cards */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="text-3xl">📊</span>
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+            <span className="text-xl sm:text-2xl lg:text-3xl">📊</span>
             {translations.statistics}
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
             {/* Total Trees */}
             <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
               <div className="flex items-center justify-between mb-2">
@@ -523,17 +529,18 @@ export default function DashboardPage() {
           {/* Main Content - Trees */}
           <div className="lg:col-span-2">
             <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <span className="text-3xl">🌲</span>
+              <div className="flex justify-between items-center mb-4 sm:mb-6 gap-2">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <span className="text-xl sm:text-2xl lg:text-3xl">🌲</span>
                   {translations.trees}
                 </h2>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+                  className="px-2 sm:px-4 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 text-xs sm:text-base"
                 >
-                  <span className="text-lg">➕</span>
-                  {translations.addTree}
+                  <span className="text-sm sm:text-lg">➕</span>
+                  <span className="hidden sm:inline">{translations.addTree}</span>
+                  <span className="sm:hidden">Qo'shish</span>
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
