@@ -36,6 +36,26 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Get IP address and user agent
+    const ipAddress = req.ip || 
+                     req.headers['x-forwarded-for']?.split(',')[0] || 
+                     req.connection.remoteAddress ||
+                     req.socket.remoteAddress ||
+                     'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    // Create session record
+    try {
+      await pool.query(
+        `INSERT INTO user_sessions (user_id, ip_address, user_agent, login_time, last_activity, is_active)
+         VALUES ($1, $2, $3, NOW(), NOW(), true)`,
+        [user.id, ipAddress, userAgent]
+      );
+    } catch (sessionError) {
+      // Log error but don't fail login if session table doesn't exist
+      console.warn('Failed to create session record:', sessionError.message);
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },

@@ -113,6 +113,10 @@ export const adminsAPI = {
     const response = await api.delete(`/api/v1/admins/${id}`);
     return response.data;
   },
+  getSessions: async () => {
+    const response = await api.get('/api/v1/admins/sessions');
+    return response.data;
+  },
 };
 
 export const statsAPI = {
@@ -133,6 +137,10 @@ export const settingsAPI = {
   },
   update: async (key, value) => {
     const response = await api.put(`/api/v1/settings/${key}`, { value });
+    return response.data;
+  },
+  getESP8266Config: async () => {
+    const response = await api.get('/api/v1/settings/esp8266/config');
     return response.data;
   },
 };

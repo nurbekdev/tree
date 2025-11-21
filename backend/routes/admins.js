@@ -214,5 +214,37 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /api/v1/admins/sessions - Get all user sessions
+router.get('/sessions', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        s.id,
+        s.user_id,
+        u.username,
+        s.ip_address,
+        s.user_agent,
+        s.login_time,
+        s.last_activity,
+        s.is_active
+       FROM user_sessions s
+       JOIN users u ON s.user_id = u.id
+       ORDER BY s.login_time DESC
+       LIMIT 100`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching user sessions:', error);
+    
+    // If table doesn't exist, return empty array
+    if (error.code === '42P01') {
+      return res.json([]);
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
 

@@ -118,6 +118,25 @@ async function migrate() {
     `);
     console.log('✓ settings table created');
 
+    // Create user_sessions table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        login_time TIMESTAMP DEFAULT NOW(),
+        last_activity TIMESTAMP DEFAULT NOW(),
+        is_active BOOLEAN DEFAULT true
+      )
+    `);
+    console.log('✓ user_sessions table created');
+
+    // Create index for user_sessions
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_user_sessions_login_time ON user_sessions(login_time DESC)');
+    console.log('✓ user_sessions indexes created');
+
     // Seed default settings
     await pool.query(`
       INSERT INTO settings (key, value, description)

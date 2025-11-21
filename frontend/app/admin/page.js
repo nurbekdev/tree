@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { adminsAPI, statsAPI, settingsAPI } from '@/lib/api'
+import { adminsAPI, statsAPI, settingsAPI, treesAPI } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -46,6 +46,31 @@ const translations = {
   ppmThresholdDesc: 'Tutun miqdori qancha PPM dan oshib ketganda ogohlantirish yuboriladi',
   save: 'Saqlash',
   settingUpdated: 'Sozlama muvaffaqiyatli yangilandi',
+  esp8266Config: 'ESP8266 Konfiguratsiyasi',
+  backendUrl: 'Backend URL',
+  apiKey: 'API Key',
+  telemetryEndpoint: 'Telemetriya Endpoint',
+  copyToClipboard: 'Nusxalash',
+  copied: 'Nusxalandi!',
+  activeSensors: 'Faol Senslar',
+  userSessions: 'Foydalanuvchi Sessiyalari',
+  treeId: 'Daraxt ID',
+  sensorStatus: 'Sensor Holati',
+  online: 'Onlayn',
+  offline: 'Offline',
+  lastSeen: 'Oxirgi marta ko\'rilgan',
+  temperature: 'Harorat',
+  humidity: 'Namlik',
+  smoke: 'Tutun (MQ-2)',
+  motion: 'Harakat (MPU6050)',
+  noActiveSensors: 'Faol senslar mavjud emas',
+  loading: 'Yuklanmoqda...',
+  username: 'Foydalanuvchi',
+  ipAddress: 'IP Manzil',
+  loginTime: 'Login vaqti',
+  lastActivity: 'Oxirgi faollik',
+  deviceInfo: 'Qurilma ma\'lumoti',
+  noSessions: 'Sessiyalar mavjud emas',
 }
 
 export default function AdminPage() {
@@ -62,6 +87,10 @@ export default function AdminPage() {
   })
   const [ppmThreshold, setPpmThreshold] = useState(400)
   const [ppmThresholdInput, setPpmThresholdInput] = useState('400') // String for input (allows clearing)
+  const [esp8266Config, setEsp8266Config] = useState(null)
+  const [trees, setTrees] = useState([])
+  const [userSessions, setUserSessions] = useState([])
+  const [copiedField, setCopiedField] = useState(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -76,6 +105,9 @@ export default function AdminPage() {
     loadAdmins()
     loadStats()
     loadSettings()
+    loadESP8266Config()
+    loadTrees()
+    loadUserSessions()
   }, [router])
 
   const loadAdmins = async () => {
@@ -320,6 +352,71 @@ export default function AdminPage() {
     resetForm()
   }
 
+  const loadESP8266Config = async () => {
+    try {
+      const data = await settingsAPI.getESP8266Config()
+      setEsp8266Config(data)
+    } catch (error) {
+      console.error('Error loading ESP8266 config:', error)
+      // Set default config if API fails
+      setEsp8266Config({
+        backend_url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+        api_key: 'Not available',
+        api_key_preview: 'Not available',
+        telemetry_endpoint: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/v1/telemetry`,
+        header_name: 'X-API-Key'
+      })
+    }
+  }
+
+  const loadTrees = async () => {
+    try {
+      const data = await treesAPI.getAll()
+      setTrees(data)
+    } catch (error) {
+      console.error('Error loading trees:', error)
+    }
+  }
+
+  const copyToClipboard = async (text, fieldName) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedField(fieldName)
+      toast.success(translations.copied)
+      setTimeout(() => setCopiedField(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+      toast.error('Nusxalashda xatolik')
+    }
+  }
+
+  const loadUserSessions = async () => {
+    try {
+      const data = await adminsAPI.getSessions()
+      setUserSessions(data)
+    } catch (error) {
+      console.error('Error loading user sessions:', error)
+      // If endpoint doesn't exist, set empty array
+      setUserSessions([])
+    }
+  }
+
+  const getSensorStatus = (tree) => {
+    const now = new Date()
+    const lastSeen = tree.last_seen_at ? new Date(tree.last_seen_at) : null
+    const isOnline = lastSeen && (now - lastSeen) < 30000 // 30 seconds
+    
+    return {
+      isOnline,
+      lastSeen,
+      hasTelemetry: !!tree.last_telemetry,
+      temp: tree.last_telemetry?.temp_c,
+      humidity: tree.last_telemetry?.humidity_pct,
+      mq2: tree.last_telemetry?.mq2,
+      status: tree.last_status || 'unknown'
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -462,6 +559,244 @@ export default function AdminPage() {
                 </p>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* ESP8266 Configuration */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">📡</span>
+            {translations.esp8266Config}
+          </h2>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            {esp8266Config ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {translations.backendUrl}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={esp8266Config.backend_url}
+                      readOnly
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"
+                    />
+                    <button
+                      onClick={() => copyToClipboard(esp8266Config.backend_url, 'backend_url')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      {copiedField === 'backend_url' ? '✓' : '📋'}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {translations.apiKey}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={esp8266Config.api_key_preview || esp8266Config.api_key || 'Not available'}
+                      readOnly
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"
+                    />
+                    <button
+                      onClick={() => copyToClipboard(esp8266Config.api_key, 'api_key')}
+                      disabled={!esp8266Config.api_key || esp8266Config.api_key === 'Not available'}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {copiedField === 'api_key' ? '✓' : '📋'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Header nomi: {esp8266Config.header_name || 'X-API-Key'}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {translations.telemetryEndpoint}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={esp8266Config.telemetry_endpoint}
+                      readOnly
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"
+                    />
+                    <button
+                      onClick={() => copyToClipboard(esp8266Config.telemetry_endpoint, 'telemetry_endpoint')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      {copiedField === 'telemetry_endpoint' ? '✓' : '📋'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                {translations.loading}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* User Sessions */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">👥</span>
+            {translations.userSessions}
+          </h2>
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {userSessions.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                {translations.noSessions}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.username}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.ipAddress}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.deviceInfo}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.loginTime}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.lastActivity}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {userSessions.map((session) => (
+                      <tr key={session.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {session.username}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                          {session.ip_address || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {session.user_agent ? (
+                            <span className="text-xs" title={session.user_agent}>
+                              {session.user_agent.length > 50 
+                                ? `${session.user_agent.substring(0, 50)}...` 
+                                : session.user_agent}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {session.login_time 
+                            ? format(new Date(session.login_time), 'dd.MM.yyyy HH:mm:ss')
+                            : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {session.last_activity 
+                            ? format(new Date(session.last_activity), 'dd.MM.yyyy HH:mm:ss')
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Active Sensors */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">🔌</span>
+            {translations.activeSensors}
+          </h2>
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {trees.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                {translations.noActiveSensors}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.treeId}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.sensorStatus}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.temperature}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.humidity}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.smoke}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.motion}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.lastSeen}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {trees.map((tree) => {
+                      const sensorStatus = getSensorStatus(tree)
+                      return (
+                        <tr key={tree.id || tree.tree_id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {tree.tree_id}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              sensorStatus.isOnline 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {sensorStatus.isOnline ? translations.online : translations.offline}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {sensorStatus.temp !== null && sensorStatus.temp !== undefined 
+                              ? `${sensorStatus.temp.toFixed(1)}°C` 
+                              : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {sensorStatus.humidity !== null && sensorStatus.humidity !== undefined 
+                              ? `${sensorStatus.humidity.toFixed(1)}%` 
+                              : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {sensorStatus.mq2 !== null && sensorStatus.mq2 !== undefined 
+                              ? `${sensorStatus.mq2.toFixed(0)} PPM` 
+                              : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {sensorStatus.status === 'cut_detected' ? '⚠️' : sensorStatus.status === 'normal' ? '✓' : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {sensorStatus.lastSeen 
+                              ? format(new Date(sensorStatus.lastSeen), 'dd.MM.yyyy HH:mm:ss')
+                              : '-'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 

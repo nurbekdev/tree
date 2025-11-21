@@ -38,6 +38,31 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/v1/settings/esp8266/config - Get ESP8266 configuration (Backend URL and API Key)
+// This must come before /:key route to avoid matching "esp8266" as a key
+router.get('/esp8266/config', async (req, res) => {
+  try {
+    // Get backend URL from environment or construct from request
+    const backendUrl = process.env.BACKEND_URL || 
+                      process.env.API_URL || 
+                      `${req.protocol}://${req.get('host')}`;
+    
+    // Get API key from environment (only first 10 chars for display, full key for copy)
+    const apiKey = process.env.API_KEY || '';
+    
+    res.json({
+      backend_url: backendUrl,
+      api_key: apiKey,
+      api_key_preview: apiKey ? `${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}` : 'Not set',
+      telemetry_endpoint: `${backendUrl}/api/v1/telemetry`,
+      header_name: 'X-API-Key'
+    });
+  } catch (error) {
+    console.error('Error fetching ESP8266 config:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/v1/settings/:key - Get specific setting
 router.get('/:key', async (req, res) => {
   try {
