@@ -84,7 +84,13 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        proxy_redirect off;
+        
+        # Allow redirects from Next.js (important for root route redirect!)
+        # This ensures redirects like /login are properly forwarded
+        # Rewrite Location header from backend to client
+        proxy_redirect http://127.0.0.1:3001/ /;
+        proxy_redirect http://localhost:3001/ /;
+        proxy_redirect http://$host:3001/ /;
         
         # Next.js specific settings
         proxy_set_header X-Forwarded-Host $host;
