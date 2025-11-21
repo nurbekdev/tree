@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { treesAPI, alertsAPI, settingsAPI } from '@/lib/api'
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
 import toast from 'react-hot-toast'
+import { FiSettings, FiLogOut, FiPlus } from 'react-icons/fi'
 import TreeCard from '@/components/TreeCard'
 import TreeModal from '@/components/TreeModal'
 import AlertsPanel from '@/components/AlertsPanel'
@@ -457,21 +458,19 @@ export default function DashboardPage() {
               {user?.role === 'admin' && (
                 <Link
                   href="/admin"
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-base"
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2"
                   title="Admin"
                 >
-                  <span className="hidden sm:inline">⚙️ </span>
-                  <span className="sm:hidden">⚙️</span>
+                  <FiSettings className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="hidden sm:inline">Admin</span>
                 </Link>
               )}
               <button
                 onClick={handleLogout}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-base"
+                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2"
                 title="Chiqish"
               >
-                <span className="hidden sm:inline">🚪 </span>
-                <span className="sm:hidden">🚪</span>
+                <FiLogOut className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="hidden sm:inline">{translations.logout}</span>
               </button>
             </div>
@@ -538,7 +537,7 @@ export default function DashboardPage() {
                   onClick={() => setShowAddModal(true)}
                   className="px-2 sm:px-4 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 text-xs sm:text-base"
                 >
-                  <span className="text-sm sm:text-lg">➕</span>
+                  <FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="hidden sm:inline">{translations.addTree}</span>
                   <span className="sm:hidden">Qo'shish</span>
                 </button>
@@ -570,11 +569,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Sidebar - Alerts and AI */}
-          <div className="space-y-6">
+          <div className="lg:sticky lg:top-4 lg:self-start space-y-4 sm:space-y-6 max-h-[calc(100vh-2rem)] overflow-y-auto pr-2">
             <AlertsPanel alerts={alerts} onAcknowledge={loadAlerts} />
             
             {/* AI Analysis */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <TreeAI />
               <WeatherAI />
             </div>

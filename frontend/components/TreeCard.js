@@ -100,19 +100,42 @@ export default function TreeCard({ tree, onClick, ppmThreshold = 400 }) {
       
       <div className="flex items-center justify-between mb-4 relative z-10">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg transition-all duration-300 ${
-            isOffline 
-              ? 'bg-gray-200' 
-              : isPpmAlert 
-              ? 'bg-gradient-to-br from-yellow-200 via-orange-200 to-red-200 animate-pulse' 
-              : isAlert 
-              ? 'bg-red-200' 
-              : 'bg-green-200'
-          }`}>
-            <span className={`text-2xl ${isPpmAlert ? 'animate-bounce' : 'animate-bounce'}`} style={{ animationDuration: isPpmAlert ? '0.5s' : '2s' }}>
-              {isPpmAlert ? '🔥' : '🌳'}
-            </span>
-          </div>
+          {tree.image_url ? (
+            <div className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
+              isOffline 
+                ? 'border-gray-300' 
+                : isPpmAlert 
+                ? 'border-orange-400 animate-pulse' 
+                : isAlert 
+                ? 'border-red-300' 
+                : 'border-green-300'
+            }`}>
+              <img 
+                src={tree.image_url} 
+                alt={`Daraxt ${tree.tree_id}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to icon if image fails to load
+                  e.target.style.display = 'none'
+                  e.target.parentElement.innerHTML = `<span class="text-2xl flex items-center justify-center w-full h-full ${isPpmAlert ? 'animate-bounce' : ''}" style="animation-duration: ${isPpmAlert ? '0.5s' : '2s'}">${isPpmAlert ? '🔥' : '🌳'}</span>`
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`p-2 rounded-lg transition-all duration-300 flex-shrink-0 ${
+              isOffline 
+                ? 'bg-gray-200' 
+                : isPpmAlert 
+                ? 'bg-gradient-to-br from-yellow-200 via-orange-200 to-red-200 animate-pulse' 
+                : isAlert 
+                ? 'bg-red-200' 
+                : 'bg-green-200'
+            }`}>
+              <span className={`text-2xl ${isPpmAlert ? 'animate-bounce' : 'animate-bounce'}`} style={{ animationDuration: isPpmAlert ? '0.5s' : '2s' }}>
+                {isPpmAlert ? '🔥' : '🌳'}
+              </span>
+            </div>
+          )}
           <div>
             <h3 className="text-lg font-bold text-gray-900">
               {translations.treeId} {tree.tree_id}

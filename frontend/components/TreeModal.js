@@ -87,7 +87,9 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
     latitude: tree.latitude || '',
     longitude: tree.longitude || '',
     owner_contact: tree.owner_contact || '',
+    image_url: tree.image_url || '',
   })
+  const [imagePreview, setImagePreview] = useState(tree.image_url || null)
   const [timeRange, setTimeRange] = useState('24h')
   const [treeData, setTreeData] = useState(tree)
   const [currentTelemetry, setCurrentTelemetry] = useState(null) // Real-time current values
@@ -340,14 +342,94 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
     }
   }, [currentTree.tree_id, treeData]) // Include treeData to get latest tree_id
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Faqat rasm fayllari qabul qilinadi')
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Rasm hajmi 5MB dan katta bo\'lmasligi kerak')
+        return
+      }
+
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result
+        setFormData({ ...formData, image_url: base64String })
+        setImagePreview(base64String)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image_url: '' })
+    setImagePreview(null)
+  }
+
   const handleSave = async () => {
     try {
-      await treesAPI.update(currentTree.id || currentTree.tree_id, formData)
+      // Always compress image to reduce size
+      let dataToSave = { ...formData }
+      if (dataToSave.image_url) {
+        // Compress image by reducing size and quality
+        const img = new Image()
+        img.src = dataToSave.image_url
+        await new Promise((resolve, reject) => {
+          img.onerror = () => reject(new Error('Rasm yuklashda xatolik'))
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            const maxWidth = 600
+            const maxHeight = 600
+            let width = img.width
+            let height = img.height
+            
+            // Calculate new dimensions maintaining aspect ratio
+            if (width > height) {
+              if (width > maxWidth) {
+                height *= maxWidth / width
+                width = maxWidth
+              }
+            } else {
+              if (height > maxHeight) {
+                width *= maxHeight / height
+                height = maxHeight
+              }
+            }
+            
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(img, 0, 0, width, height)
+            // Use lower quality (0.5) for better compression
+            dataToSave.image_url = canvas.toDataURL('image/jpeg', 0.5)
+            console.log('Image compressed:', {
+              original: dataToSave.image_url.length,
+              compressed: dataToSave.image_url.length,
+              size: `${width}x${height}`
+            })
+            resolve()
+          }
+        })
+      }
+      
+      await treesAPI.update(currentTree.id || currentTree.tree_id, dataToSave)
       toast.success('Ma\'lumotlar saqlandi')
       setEditing(false)
+      // Update treeData with new image
+      const updatedTree = await treesAPI.getById(currentTree.id || currentTree.tree_id)
+      setTreeData(updatedTree)
       onClose()
     } catch (error) {
-      toast.error('Saqlashda xatolik')
+      console.error('Save error:', error)
+      const errorMsg = error.response?.data?.error || error.message || 'Saqlashda xatolik'
+      toast.error(errorMsg)
     }
   }
 
@@ -542,13 +624,21 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex justify-between items-center">
+        {/* Sticky Header */}
+        <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
           <div className="flex items-center gap-3">
-            <span className="text-4xl animate-bounce" style={{ animationDuration: '2s' }}>🌳</span>
+            {currentTree.image_url ? (
+              <img 
+                src={currentTree.image_url} 
+                alt={`Daraxt ${currentTree.tree_id}`}
+                className="w-12 h-12 rounded-lg object-cover border-2 border-white/30"
+              />
+            ) : (
+              <span className="text-4xl animate-bounce" style={{ animationDuration: '2s' }}>🌳</span>
+            )}
             <div>
               <h2 className="text-2xl font-bold text-white">
                 {translations.title}
@@ -568,207 +658,160 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
           </button>
         </div>
 
-        {/* Content */}
+        {/* Content - Grid Layout */}
         <div className="overflow-y-auto flex-1 p-6">
-
-          {/* Current Real-time Status */}
-          {isOffline ? (
-            <div className="mb-6 p-6 bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-400 border-dashed rounded-xl shadow-sm">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <span className="text-4xl">⚫</span>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800">{translations.offline}</h3>
-                  <p className="text-sm text-gray-600">{translations.offlineMessage}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Metadata (Sticky on large screens) */}
+            <div className="lg:col-span-1 lg:sticky lg:top-6 lg:self-start space-y-6">
+              {/* Current Real-time Status - Compact */}
+              {isOffline ? (
+                <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-400 border-dashed rounded-xl shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">⚫</span>
+                    <h3 className="text-lg font-bold text-gray-800">{translations.offline}</h3>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">{translations.offlineMessage}</p>
+                  {lastSeenDate && (
+                    <p className="text-xs text-gray-600">
+                      <span className="font-semibold">{translations.lastSeen}:</span>{' '}
+                      {format(lastSeenDate, 'dd.MM.yyyy HH:mm')}
+                    </p>
+                  )}
                 </div>
-              </div>
-              {lastSeenDate && (
-                <div className="mt-4 pt-4 border-t border-gray-300">
-                  <p className="text-xs text-gray-600 text-center">
-                    <span className="font-semibold">{translations.lastSeen}:</span>{' '}
-                    {format(lastSeenDate, 'dd.MM.yyyy HH:mm:ss')}
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : shouldShowTelemetry ? (
-            <div className="mb-6 p-5 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 border-2 border-green-200 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  {translations.currentStatus}
-                </h3>
-                <span className="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-semibold animate-pulse shadow-sm">
-                  {translations.realTime}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-xl border-2 border-blue-100 shadow-sm hover:shadow-md transition-shadow">
+              ) : shouldShowTelemetry ? (
+                <div className="p-4 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 border-2 border-green-200 rounded-xl shadow-sm">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{translations.temperature}</span>
-                    <span className="text-3xl">🌡️</span>
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      {translations.currentStatus}
+                    </h3>
+                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                      {translations.realTime}
+                    </span>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">
-                    {currentTelemetry.temp_c != null ? Number(currentTelemetry.temp_c).toFixed(1) : '-'}
-                    <span className="text-xl text-gray-500 ml-1">{translations.celsius}</span>
-                  </p>
-                  <div className="h-1 bg-gray-100 rounded-full mt-2">
-                    <div 
-                      className="h-1 bg-blue-500 rounded-full"
-                      style={{ width: `${Math.min(100, ((currentTelemetry.temp_c || 0) / 50) * 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="bg-white p-5 rounded-xl border-2 border-green-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{translations.humidity}</span>
-                    <span className="text-3xl">💧</span>
-                  </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">
-                    {currentTelemetry.humidity_pct != null ? Number(currentTelemetry.humidity_pct).toFixed(1) : '-'}
-                    <span className="text-xl text-gray-500 ml-1">{translations.percent}</span>
-                  </p>
-                  <div className="h-1 bg-gray-100 rounded-full mt-2">
-                    <div 
-                      className="h-1 bg-green-500 rounded-full"
-                      style={{ width: `${Math.min(100, currentTelemetry.humidity_pct || 0)}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div className={`p-5 rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow ${
-                  (currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400)
-                    ? 'bg-red-50 border-red-300' 
-                    : 'bg-white border-yellow-100'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{translations.smoke}</span>
-                    <span className="text-3xl">{(currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) ? '🔥' : '💨'}</span>
-                  </div>
-                  <p className={`text-3xl font-bold mb-1 ${
-                    (currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) ? 'text-red-700' : 'text-gray-900'
-                  }`}>
-                    {currentTelemetry.mq2 != null ? Number(currentTelemetry.mq2) : '-'}
-                    <span className="text-xl text-gray-500 ml-1">{translations.ppm}</span>
-                  </p>
-                  {(currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) ? (
-                    <p className="text-xs text-red-600 mt-2 font-bold bg-red-100 px-2 py-1 rounded">⚠️ Yuqori daraja!</p>
-                  ) : (
-                    <div className="h-1 bg-gray-100 rounded-full mt-2">
-                      <div 
-                        className="h-1 bg-yellow-400 rounded-full"
-                        style={{ width: `${Math.min(100, ((currentTelemetry.mq2 || 0) / 400) * 100)}%` }}
-                      ></div>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="bg-white p-3 rounded-lg border-2 border-blue-100 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-gray-700 uppercase">{translations.temperature}</span>
+                        <span className="text-xl">🌡️</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {currentTelemetry.temp_c != null ? Number(currentTelemetry.temp_c).toFixed(1) : '-'}
+                        <span className="text-sm text-gray-500 ml-1">{translations.celsius}</span>
+                      </p>
                     </div>
+                    <div className="bg-white p-3 rounded-lg border-2 border-green-100 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-gray-700 uppercase">{translations.humidity}</span>
+                        <span className="text-xl">💧</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {currentTelemetry.humidity_pct != null ? Number(currentTelemetry.humidity_pct).toFixed(1) : '-'}
+                        <span className="text-sm text-gray-500 ml-1">{translations.percent}</span>
+                      </p>
+                    </div>
+                    <div className={`p-3 rounded-lg border-2 shadow-sm ${
+                      (currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400)
+                        ? 'bg-red-50 border-red-300' 
+                        : 'bg-white border-yellow-100'
+                    }`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-gray-700 uppercase">{translations.smoke}</span>
+                        <span className="text-xl">{(currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) ? '🔥' : '💨'}</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${
+                        (currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) ? 'text-red-700' : 'text-gray-900'
+                      }`}>
+                        {currentTelemetry.mq2 != null ? Number(currentTelemetry.mq2) : '-'}
+                        <span className="text-sm text-gray-500 ml-1">{translations.ppm}</span>
+                      </p>
+                      {(currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) && (
+                        <p className="text-xs text-red-600 mt-1 font-bold">⚠️ Yuqori!</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : !isOffline ? (
+                <div className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 border-dashed rounded-xl shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">⏳</span>
+                    <h3 className="text-sm font-bold text-yellow-800">Ma'lumotlar kutilmoqda...</h3>
+                  </div>
+                  <p className="text-xs text-yellow-700">Qurilma ulanib, ma'lumot yuborishni kutmoqda</p>
+                </div>
+              ) : null}
+
+              {/* Metadata Section */}
+              <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-lg">📋</span>
+                    {translations.metadata}
+                  </h3>
+                  {!editing && (
+                    <button
+                      onClick={() => setEditing(true)}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 rounded-md hover:bg-blue-50 transition-colors"
+                    >
+                      ✏️ {translations.edit}
+                    </button>
                   )}
                 </div>
-              </div>
-              {currentTelemetry.timestamp && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 text-center">
-                    <span className="font-semibold">Oxirgi yangilanish:</span> {
-                      (() => {
-                        try {
-                          const timestamp = currentTelemetry.timestamp instanceof Date 
-                            ? currentTelemetry.timestamp 
-                            : new Date(currentTelemetry.timestamp)
-                          // Validate timestamp - if it's invalid (1970 or earlier), show error
-                          if (timestamp.getTime() < new Date('2000-01-01').getTime()) {
-                            return 'Ma\'lumot yo\'q'
-                          }
-                          return format(timestamp, 'dd.MM.yyyy HH:mm:ss')
-                        } catch (e) {
-                          console.error('Error formatting timestamp:', e, currentTelemetry.timestamp)
-                          return 'Ma\'lumot yo\'q'
+
+                <div className="space-y-3">
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      {translations.species}
+                    </label>
+                    {editing ? (
+                      <input
+                        type="text"
+                        value={formData.species}
+                        onChange={(e) =>
+                          setFormData({ ...formData, species: e.target.value })
                         }
-                      })()
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : !isOffline ? (
-            <div className="mb-6 p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 border-dashed rounded-xl shadow-sm">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <span className="text-4xl">⏳</span>
-                <div>
-                  <h3 className="text-xl font-bold text-yellow-800">Ma'lumotlar kutilmoqda...</h3>
-                  <p className="text-sm text-yellow-700">Qurilma ulanib, ma'lumot yuborishni kutmoqda</p>
-                </div>
-              </div>
-            </div>
-          ) : null}
+                        className="w-full px-2 py-1.5 text-sm border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-semibold text-sm">{formData.species || <span className="text-gray-400">-</span>}</p>
+                    )}
+                  </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Metadata Section */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <div className="flex justify-between items-center mb-5">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <span className="text-xl">📋</span>
-                  {translations.metadata}
-                </h3>
-                {!editing && (
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-semibold px-3 py-1 rounded-md hover:bg-blue-50 transition-colors"
-                  >
-                    ✏️ {translations.edit}
-                  </button>
-                )}
-              </div>
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      {translations.plantedYear}
+                    </label>
+                    {editing ? (
+                      <input
+                        type="number"
+                        value={formData.planted_year}
+                        onChange={(e) =>
+                          setFormData({ ...formData, planted_year: e.target.value })
+                        }
+                        className="w-full px-2 py-1.5 text-sm border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-semibold text-sm">{formData.planted_year || <span className="text-gray-400">-</span>}</p>
+                    )}
+                  </div>
 
-              <div className="space-y-5">
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    {translations.species}
-                  </label>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.species}
-                      onChange={(e) =>
-                        setFormData({ ...formData, species: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
-                    />
-                  ) : (
-                    <p className="text-gray-900 font-semibold text-lg">{formData.species || <span className="text-gray-400">-</span>}</p>
-                  )}
-                </div>
-
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    {translations.plantedYear}
-                  </label>
-                  {editing ? (
-                    <input
-                      type="number"
-                      value={formData.planted_year}
-                      onChange={(e) =>
-                        setFormData({ ...formData, planted_year: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
-                    />
-                  ) : (
-                    <p className="text-gray-900 font-semibold text-lg">{formData.planted_year || <span className="text-gray-400">-</span>}</p>
-                  )}
-                </div>
-
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    {translations.notes}
-                  </label>
-                  {editing ? (
-                    <textarea
-                      value={formData.notes}
-                      onChange={(e) =>
-                        setFormData({ ...formData, notes: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
-                      rows="3"
-                    />
-                  ) : (
-                    <p className="text-gray-900 font-medium">{formData.notes || <span className="text-gray-400">-</span>}</p>
-                  )}
-                </div>
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      {translations.notes}
+                    </label>
+                    {editing ? (
+                      <textarea
+                        value={formData.notes}
+                        onChange={(e) =>
+                          setFormData({ ...formData, notes: e.target.value })
+                        }
+                        className="w-full px-2 py-1.5 text-sm border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                        rows="2"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-medium text-sm">{formData.notes || <span className="text-gray-400">-</span>}</p>
+                    )}
+                  </div>
 
                 <div className="bg-white p-4 rounded-lg border border-gray-200">
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -847,6 +890,65 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                   )}
                 </div>
 
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    Daraxt rasmi
+                  </label>
+                  {editing ? (
+                    <div>
+                      {imagePreview ? (
+                        <div className="relative">
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="w-full h-48 object-cover rounded-lg border-2 border-gray-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors"
+                            title="Rasmni o'chirish"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                            id="image-upload-edit"
+                          />
+                          <label
+                            htmlFor="image-upload-edit"
+                            className="cursor-pointer flex flex-col items-center gap-2"
+                          >
+                            <span className="text-4xl">📷</span>
+                            <span className="text-sm text-gray-600">Rasm yuklash uchun bosing</span>
+                            <span className="text-xs text-gray-500">JPG, PNG (maks. 5MB)</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      {formData.image_url ? (
+                        <img 
+                          src={formData.image_url} 
+                          alt={`Daraxt ${currentTree.tree_id}`}
+                          className="w-full h-48 object-cover rounded-lg border-2 border-gray-300"
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                          <span className="text-gray-400 text-sm">Rasm yuklanmagan</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {editing && (
                   <div className="flex gap-3 pt-2">
                     <button
@@ -866,9 +968,13 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
               </div>
             </div>
 
-            {/* Alerts Section */}
-            {(activeAlerts.length > 0 || acknowledgedAlerts.length > 0) && (
-              <div className="mb-6">
+            </div>
+
+            {/* Right Column - Charts and Alerts */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Alerts Section */}
+              {(activeAlerts.length > 0 || acknowledgedAlerts.length > 0) && (
+                <div>
                 {/* Active Alerts */}
                 {activeAlerts.length > 0 && (
                   <div className="mb-4 p-5 bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-xl shadow-sm">
@@ -960,8 +1066,8 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
               </div>
             )}
 
-            {/* Telemetry Charts */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+              {/* Telemetry Charts */}
+              <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                   <span className="text-xl">📊</span>
@@ -1208,6 +1314,7 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                   </p>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>

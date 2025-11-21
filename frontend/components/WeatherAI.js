@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import { FiChevronDown, FiChevronUp } from 'react-icons/fi'
 
 const translations = {
   title: "AI Ob-havo Tahlili",
@@ -27,6 +28,7 @@ export default function WeatherAI() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedDays, setSelectedDays] = useState(7)
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     loadWeatherForecast()
@@ -98,89 +100,104 @@ export default function WeatherAI() {
 
   if (loading && !forecast) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{translations.title}</h3>
+      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">{translations.title}</h3>
         </div>
-        <p className="text-gray-600">{translations.loading}</p>
+        <p className="text-sm text-gray-600">{translations.loading}</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">{translations.title}</h3>
-          <p className="text-sm text-gray-600">{translations.subtitle}</p>
+        <div className="flex-1">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <span className="text-lg sm:text-xl">🌤️</span>
+            {translations.title}
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-600">{translations.subtitle}</p>
         </div>
-      </div>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
-          {error}
-        </div>
-      )}
-
-      <div className="mb-4 flex gap-2">
         <button
-          onClick={() => setSelectedDays(7)}
-          className={`px-3 py-1 text-sm rounded ${
-            selectedDays === 7
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          title={collapsed ? "Kengaytirish" : "Yig'ish"}
         >
-          {translations.days7}
-        </button>
-        <button
-          onClick={() => setSelectedDays(10)}
-          className={`px-3 py-1 text-sm rounded ${
-            selectedDays === 10
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          {translations.days10}
-        </button>
-        <button
-          onClick={() => setSelectedDays(30)}
-          className={`px-3 py-1 text-sm rounded ${
-            selectedDays === 30
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          {translations.days30}
+          {collapsed ? <FiChevronDown className="w-5 h-5" /> : <FiChevronUp className="w-5 h-5" />}
         </button>
       </div>
 
-      {forecast && (
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {forecast.map((day, index) => (
-            <div
-              key={index}
-              className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {format(day.date, 'dd.MM.yyyy')} ({format(day.date, 'EEE')})
-                  </p>
-                  <p className="text-sm text-gray-600">{day.description}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-gray-900">{day.avgTemp}°C</p>
-                  <p className="text-xs text-gray-500">
-                    {day.minTemp}° / {day.maxTemp}°
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-4 text-xs text-gray-600">
-                <span>{translations.humidity}: {day.humidity}%</span>
-              </div>
+      {!collapsed && (
+        <div className="space-y-4">
+
+          {error && (
+            <div className="p-2 sm:p-3 bg-red-50 border border-red-200 rounded text-xs sm:text-sm text-red-800">
+              {error}
             </div>
-          ))}
+          )}
+
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+            <button
+              onClick={() => setSelectedDays(7)}
+              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded transition-colors ${
+                selectedDays === 7
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {translations.days7}
+            </button>
+            <button
+              onClick={() => setSelectedDays(10)}
+              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded transition-colors ${
+                selectedDays === 10
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {translations.days10}
+            </button>
+            <button
+              onClick={() => setSelectedDays(30)}
+              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded transition-colors ${
+                selectedDays === 30
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {translations.days30}
+            </button>
+          </div>
+
+          {forecast && (
+            <div className="space-y-2 sm:space-y-3 max-h-64 sm:max-h-80 overflow-y-auto pr-1">
+              {forecast.slice(0, selectedDays === 7 ? 7 : selectedDays === 10 ? 10 : 15).map((day, index) => (
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-lg p-2 sm:p-3 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-xs sm:text-sm text-gray-900">
+                        {format(day.date, 'dd.MM')} ({format(day.date, 'EEE')})
+                      </p>
+                      <p className="text-xs text-gray-600">{day.description}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-base sm:text-lg font-bold text-gray-900">{day.avgTemp}°C</p>
+                      <p className="text-xs text-gray-500">
+                        {day.minTemp}°/{day.maxTemp}°
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-1.5 text-xs text-gray-600">
+                    <span>{translations.humidity}: {day.humidity}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

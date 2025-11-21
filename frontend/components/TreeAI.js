@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { treesAPI } from '@/lib/api'
 import { format } from 'date-fns'
+import { FiChevronDown, FiChevronUp } from 'react-icons/fi'
 
 const translations = {
   title: "AI Daraxt Tahlili",
@@ -47,6 +48,7 @@ export default function TreeAI() {
   const [trees, setTrees] = useState([])
   const [loading, setLoading] = useState(true)
   const [analysis, setAnalysis] = useState(null)
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -230,11 +232,11 @@ export default function TreeAI() {
 
   if (loading && !analysis) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{translations.title}</h3>
+      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">{translations.title}</h3>
         </div>
-        <p className="text-gray-600">{translations.loading}</p>
+        <p className="text-sm text-gray-600">{translations.loading}</p>
       </div>
     )
   }
@@ -244,116 +246,133 @@ export default function TreeAI() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">{translations.title}</h3>
-          <p className="text-sm text-gray-600">{translations.subtitle}</p>
+    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div className="flex-1">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <span className="text-lg sm:text-xl">🤖</span>
+            {translations.title}
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-600">{translations.subtitle}</p>
         </div>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          title={collapsed ? "Kengaytirish" : "Yig'ish"}
+        >
+          {collapsed ? <FiChevronDown className="w-5 h-5" /> : <FiChevronUp className="w-5 h-5" />}
+        </button>
       </div>
 
-      {/* Health Score */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-semibold text-gray-900">{translations.healthScore}</h4>
-          <span className={`px-3 py-1 rounded-full text-sm font-bold ${getHealthColor(analysis.avgHealthScore)}`}>
-            {analysis.avgHealthScore}%
-          </span>
-        </div>
-        <p className="text-sm text-gray-600 mb-2">{translations.healthScoreDesc}</p>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 bg-gray-200 rounded-full h-2">
-            <div 
-              className={`h-2 rounded-full ${
-                analysis.avgHealthScore >= 80 ? 'bg-green-500' :
-                analysis.avgHealthScore >= 60 ? 'bg-blue-500' :
-                analysis.avgHealthScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
-              style={{ width: `${analysis.avgHealthScore}%` }}
-            ></div>
-          </div>
-          <span className="text-xs text-gray-600">{getHealthLabel(analysis.avgHealthScore)}</span>
-        </div>
-      </div>
+      {!collapsed && (
+        <div className="space-y-4 sm:space-y-6">
 
-      {/* Risk Analysis */}
-      <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <h4 className="font-semibold text-gray-900 mb-3">{translations.riskAnalysis}</h4>
-        <div className="grid grid-cols-3 gap-3 mb-3">
-          <div className="text-center p-3 bg-white rounded border">
-            <p className="text-2xl font-bold text-red-600">{analysis.riskCounts.high}</p>
-            <p className="text-xs text-gray-600">{translations.highRisk}</p>
+          {/* Health Score */}
+          <div className="p-3 sm:p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm sm:text-base font-semibold text-gray-900">{translations.healthScore}</h4>
+              <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-bold ${getHealthColor(analysis.avgHealthScore)}`}>
+                {analysis.avgHealthScore}%
+              </span>
+            </div>
+            <p className="text-xs text-gray-600 mb-2">{translations.healthScoreDesc}</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full ${
+                    analysis.avgHealthScore >= 80 ? 'bg-green-500' :
+                    analysis.avgHealthScore >= 60 ? 'bg-blue-500' :
+                    analysis.avgHealthScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${analysis.avgHealthScore}%` }}
+                ></div>
+              </div>
+              <span className="text-xs text-gray-600 whitespace-nowrap">{getHealthLabel(analysis.avgHealthScore)}</span>
+            </div>
           </div>
-          <div className="text-center p-3 bg-white rounded border">
-            <p className="text-2xl font-bold text-yellow-600">{analysis.riskCounts.medium}</p>
-            <p className="text-xs text-gray-600">{translations.mediumRisk}</p>
-          </div>
-          <div className="text-center p-3 bg-white rounded border">
-            <p className="text-2xl font-bold text-green-600">{analysis.riskCounts.low}</p>
-            <p className="text-xs text-gray-600">{translations.lowRisk}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">{translations.riskLevel}:</span>
-          <span className={`px-2 py-1 rounded text-xs font-semibold ${getRiskColor(analysis.riskLevel)}`}>
-            {getRiskLabel(analysis.riskLevel)}
-          </span>
-        </div>
-      </div>
 
-      {/* Recommendations */}
-      <div className="mb-6">
-        <h4 className="font-semibold text-gray-900 mb-3">{translations.recommendations}</h4>
-        <div className="space-y-3">
-          {analysis.recommendations.map((rec, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg border ${
-                rec.priority === 'high'
-                  ? 'bg-red-50 border-red-200'
-                  : rec.priority === 'medium'
-                  ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-blue-50 border-blue-200'
-              }`}
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-xl">
-                  {rec.priority === 'high' ? '🚨' : rec.priority === 'medium' ? '⚠️' : '💡'}
-                </span>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900 text-sm mb-1">{rec.title}</p>
-                  <p className="text-xs text-gray-700">{rec.message}</p>
-                </div>
+          {/* Risk Analysis */}
+          <div className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">{translations.riskAnalysis}</h4>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div className="text-center p-2 sm:p-3 bg-white rounded border">
+                <p className="text-xl sm:text-2xl font-bold text-red-600">{analysis.riskCounts.high}</p>
+                <p className="text-xs text-gray-600">{translations.highRisk}</p>
+              </div>
+              <div className="text-center p-2 sm:p-3 bg-white rounded border">
+                <p className="text-xl sm:text-2xl font-bold text-yellow-600">{analysis.riskCounts.medium}</p>
+                <p className="text-xs text-gray-600">{translations.mediumRisk}</p>
+              </div>
+              <div className="text-center p-2 sm:p-3 bg-white rounded border">
+                <p className="text-xl sm:text-2xl font-bold text-green-600">{analysis.riskCounts.low}</p>
+                <p className="text-xs text-gray-600">{translations.lowRisk}</p>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Trend Analysis */}
-      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <h4 className="font-semibold text-gray-900 mb-2">{translations.trends}</h4>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">
-            {analysis.trend === 'improving' ? '📈' : analysis.trend === 'stable' ? '➡️' : '📉'}
-          </span>
-          <div>
-            <p className="text-sm font-medium text-gray-900">
-              {analysis.trend === 'improving' ? translations.improving :
-               analysis.trend === 'stable' ? translations.stable :
-               translations.declining}
-            </p>
-            <p className="text-xs text-gray-600">
-              {analysis.totalTrees} ta daraxt monitoring qilinmoqda
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm text-gray-600">{translations.riskLevel}:</span>
+              <span className={`px-2 py-0.5 sm:py-1 rounded text-xs font-semibold ${getRiskColor(analysis.riskLevel)}`}>
+                {getRiskLabel(analysis.riskLevel)}
+              </span>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {analysis.timestamp && (
-        <p className="text-xs text-gray-500 mt-4 text-center">
-          Oxirgi tahlil: {format(analysis.timestamp, 'dd.MM.yyyy HH:mm:ss')}
-        </p>
+          {/* Recommendations - Limit to 3 */}
+          {analysis.recommendations.length > 0 && (
+            <div>
+              <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">{translations.recommendations}</h4>
+              <div className="space-y-2 sm:space-y-3 max-h-48 overflow-y-auto">
+                {analysis.recommendations.slice(0, 3).map((rec, index) => (
+                  <div
+                    key={index}
+                    className={`p-2 sm:p-3 rounded-lg border ${
+                      rec.priority === 'high'
+                        ? 'bg-red-50 border-red-200'
+                        : rec.priority === 'medium'
+                        ? 'bg-yellow-50 border-yellow-200'
+                        : 'bg-blue-50 border-blue-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-lg sm:text-xl flex-shrink-0">
+                        {rec.priority === 'high' ? '🚨' : rec.priority === 'medium' ? '⚠️' : '💡'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-xs sm:text-sm mb-0.5 sm:mb-1">{rec.title}</p>
+                        <p className="text-xs text-gray-700 line-clamp-2">{rec.message}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Trend Analysis */}
+          <div className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">{translations.trends}</h4>
+            <div className="flex items-center gap-2">
+              <span className="text-xl sm:text-2xl flex-shrink-0">
+                {analysis.trend === 'improving' ? '📈' : analysis.trend === 'stable' ? '➡️' : '📉'}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-900">
+                  {analysis.trend === 'improving' ? translations.improving :
+                   analysis.trend === 'stable' ? translations.stable :
+                   translations.declining}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {analysis.totalTrees} ta daraxt
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {analysis.timestamp && (
+            <p className="text-xs text-gray-500 mt-2 sm:mt-4 text-center">
+              {format(analysis.timestamp, 'dd.MM.yyyy HH:mm')}
+            </p>
+          )}
+        </div>
       )}
     </div>
   )

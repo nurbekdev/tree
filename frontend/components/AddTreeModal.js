@@ -35,8 +35,10 @@ export default function AddTreeModal({ onClose, onSuccess }) {
     latitude: '',
     longitude: '',
     owner_contact: '',
+    image_url: '',
   })
   const [loading, setLoading] = useState(false)
+  const [imagePreview, setImagePreview] = useState(null)
   const [mapPosition, setMapPosition] = useState([41.3111, 69.2797]) // Tashkent default
 
   const handleSubmit = async (e) => {
@@ -49,14 +51,59 @@ export default function AddTreeModal({ onClose, onSuccess }) {
 
     setLoading(true)
     try {
-      await treesAPI.create(formData)
+      // Always compress image to reduce size
+      let dataToSave = { ...formData }
+      if (dataToSave.image_url) {
+        // Compress image by reducing size and quality
+        const img = new Image()
+        img.src = dataToSave.image_url
+        await new Promise((resolve, reject) => {
+          img.onerror = () => reject(new Error('Rasm yuklashda xatolik'))
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            const maxWidth = 600
+            const maxHeight = 600
+            let width = img.width
+            let height = img.height
+            
+            // Calculate new dimensions maintaining aspect ratio
+            if (width > height) {
+              if (width > maxWidth) {
+                height *= maxWidth / width
+                width = maxWidth
+              }
+            } else {
+              if (height > maxHeight) {
+                width *= maxHeight / height
+                height = maxHeight
+              }
+            }
+            
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(img, 0, 0, width, height)
+            // Use lower quality (0.5) for better compression
+            dataToSave.image_url = canvas.toDataURL('image/jpeg', 0.5)
+            console.log('Image compressed:', {
+              original: dataToSave.image_url.length,
+              compressed: dataToSave.image_url.length,
+              size: `${width}x${height}`
+            })
+            resolve()
+          }
+        })
+      }
+      
+      await treesAPI.create(dataToSave)
       toast.success('Daraxt muvaffaqiyatli qo\'shildi')
       if (onSuccess) {
         onSuccess()
       }
       onClose()
     } catch (error) {
-      const errorMsg = error.response?.data?.error || 'Daraxt qo\'shishda xatolik'
+      console.error('Create error:', error)
+      const errorMsg = error.response?.data?.error || error.message || 'Daraxt qo\'shishda xatolik'
       toast.error(errorMsg)
     } finally {
       setLoading(false)
@@ -68,6 +115,37 @@ export default function AddTreeModal({ onClose, onSuccess }) {
     if (e.target === e.currentTarget) {
       onClose()
     }
+  }
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Faqat rasm fayllari qabul qilinadi')
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Rasm hajmi 5MB dan katta bo\'lmasligi kerak')
+        return
+      }
+
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result
+        setFormData({ ...formData, image_url: base64String })
+        setImagePreview(base64String)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image_url: '' })
+    setImagePreview(null)
   }
 
   return (
@@ -125,6 +203,47 @@ export default function AddTreeModal({ onClose, onSuccess }) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white"
                 placeholder="Masalan: Olma, Nok, etc."
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Daraxt rasmi
+              </label>
+              {imagePreview ? (
+                <div className="relative">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-full h-48 object-cover rounded-lg border-2 border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors"
+                    title="Rasmni o'chirish"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <span className="text-4xl">📷</span>
+                    <span className="text-sm text-gray-600">Rasm yuklash uchun bosing</span>
+                    <span className="text-xs text-gray-500">JPG, PNG (maks. 5MB)</span>
+                  </label>
+                </div>
+              )}
             </div>
 
             <div>
