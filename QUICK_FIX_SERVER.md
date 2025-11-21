@@ -83,18 +83,97 @@ Endi GitHub'ga push qilsangiz, avtomatik to'g'ri path'dan deploy bo'ladi!
 
 ## Agar hali ham ishlamasa
 
+### 1. Server holatini tekshirish
+
 ```bash
-# Barcha container'larni ko'rish
-docker ps -a
+cd /var/www/tree-monitor/tree
+chmod +x scripts/check-server.sh
+./scripts/check-server.sh
+```
 
-# Loglarni ko'rish
-cd /var/www/tree-monitor/tree/backend
-docker compose -f docker-compose.prod.yml logs
+### 2. Nginx site'ni enable qilish
 
-# Nginx konfiguratsiyasini tekshirish
-nginx -t
+```bash
+# Site enable qilinganligini tekshirish
+ls -la /etc/nginx/sites-enabled/ | grep tree-monitor
+
+# Agar yo'q bo'lsa:
+ln -sf /etc/nginx/sites-available/tree-monitor /etc/nginx/sites-enabled/tree-monitor
+
+# Default site'ni o'chirish
+rm -f /etc/nginx/sites-enabled/default
 
 # Nginx'ni qayta yuklash
-systemctl reload nginx
+nginx -t && systemctl reload nginx
+```
+
+### 3. Frontend container'ni tekshirish
+
+```bash
+cd /var/www/tree-monitor/tree/backend
+
+# Frontend container loglarini ko'rish
+docker compose -f docker-compose.prod.yml logs frontend --tail=50
+
+# Frontend container'ni qayta ishga tushirish
+docker compose -f docker-compose.prod.yml restart frontend
+
+# To'g'ridan-to'g'ri test qilish
+curl -v http://127.0.0.1:3001
+```
+
+### 4. Nginx error loglarini ko'rish
+
+```bash
+# Real-time error loglar
+tail -f /var/log/nginx/error.log
+
+# Yoki oxirgi 50 qatorni ko'rish
+tail -50 /var/log/nginx/error.log
+```
+
+### 5. To'liq qayta tuzatish
+
+```bash
+cd /var/www/tree-monitor/tree
+
+# 1. Nginx'ni to'liq qayta sozlash
+./scripts/fix-nginx.sh
+
+# 2. Container'larni qayta ishga tushirish
+cd backend
+docker compose -f docker-compose.prod.yml restart
+
+# 3. Tekshirish
+sleep 10
+curl http://127.0.0.1:3000/health
+curl http://127.0.0.1:3001
+curl http://64.225.20.211/
+```
+
+### 6. Agar hali ham "Not Found" bo'lsa
+
+Bu Next.js routing muammosi bo'lishi mumkin. Quyidagilarni tekshiring:
+
+```bash
+# Frontend container'ga kirish
+docker exec -it tree-monitor-frontend-prod sh
+
+# Container ichida:
+# Port 3001'da ishlayaptimi?
+netstat -tuln | grep 3001
+
+# Yoki
+ps aux | grep node
+```
+
+Agar frontend container ichida Next.js ishlamayotgan bo'lsa:
+
+```bash
+cd /var/www/tree-monitor/tree/backend
+
+# Frontend'ni qayta build qilish
+docker compose -f docker-compose.prod.yml build --no-cache frontend
+docker compose -f docker-compose.prod.yml up -d frontend
 ```
 

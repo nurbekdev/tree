@@ -90,13 +90,34 @@ server {
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
         
+        # Important for Next.js routing
+        proxy_set_header Accept-Encoding "";
+        proxy_buffering off;
+        
         # Timeouts
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
+        
+        # Handle Next.js 404s properly
+        proxy_intercept_errors off;
     }
 }
 NGINX_EOF
+
+# Enable site if not already enabled
+if [ ! -L /etc/nginx/sites-enabled/tree-monitor ]; then
+    echo "Enabling Nginx site..."
+    ln -sf /etc/nginx/sites-available/tree-monitor /etc/nginx/sites-enabled/tree-monitor
+    echo "✓ Site enabled"
+fi
+
+# Disable default site if it exists
+if [ -L /etc/nginx/sites-enabled/default ]; then
+    echo "Disabling default Nginx site..."
+    rm -f /etc/nginx/sites-enabled/default
+    echo "✓ Default site disabled"
+fi
 
 # Test Nginx configuration
 echo "Testing Nginx configuration..."
