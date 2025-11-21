@@ -39,7 +39,15 @@ export default function LoginPage() {
       toast.success('Muvaffaqiyatli kirildi')
       router.push('/dashboard')
     } catch (error) {
-      toast.error(translations.invalidCredentials)
+      console.error('Login error:', error)
+      // Show more specific error message
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error)
+      } else if (error.message) {
+        toast.error(error.message)
+      } else {
+        toast.error(translations.invalidCredentials)
+      }
     } finally {
       setLoading(false)
     }

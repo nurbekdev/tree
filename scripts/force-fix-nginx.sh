@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# Nginx Fix Script for Tree Monitor
-# Bu script Nginx konfiguratsiyasini yangilaydi
+# Force Fix Nginx Configuration
+# Bu script Nginx konfiguratsiyasini to'g'ridan-to'g'ri yangilaydi
 
 set -e
 
 echo "=========================================="
-echo "Fixing Nginx Configuration"
+echo "Force Fixing Nginx Configuration"
 echo "=========================================="
+echo ""
 
 # Backup existing config
 if [ -f /etc/nginx/sites-available/tree-monitor ]; then
@@ -15,13 +16,12 @@ if [ -f /etc/nginx/sites-available/tree-monitor ]; then
     echo "✓ Backup created"
 fi
 
-# Create new Nginx config
+# Create new Nginx config with CORRECT proxy_pass
 cat > /etc/nginx/sites-available/tree-monitor << 'NGINX_EOF'
 server {
     listen 80;
-    server_name _;  # Replace with your domain name
+    server_name _;
 
-    # Increase body size for file uploads
     client_max_body_size 10M;
 
     # Backend API
@@ -73,10 +73,9 @@ server {
         proxy_set_header Connection "upgrade";
     }
 
-    # Frontend (Next.js) - must be last location block
-    # This catches all requests that don't match above locations
+    # Frontend (Next.js) - MUST BE LAST and MUST HAVE TRAILING SLASH
     location / {
-        # CRITICAL: Use trailing slash in proxy_pass to preserve path
+        # CRITICAL: Trailing slash is required for Next.js routing!
         proxy_pass http://127.0.0.1:3001/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -87,8 +86,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
         
-        # Allow redirects from Next.js (important for root route redirect!)
-        # This ensures redirects like /login are properly forwarded
+        # Allow redirects from Next.js
         proxy_redirect http://127.0.0.1:3001/ /;
         proxy_redirect http://localhost:3001/ /;
         proxy_redirect http://$host:3001/ /;
@@ -106,7 +104,7 @@ server {
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
         
-        # Handle Next.js properly - don't intercept errors
+        # Handle Next.js properly
         proxy_intercept_errors off;
         
         # Retry on connection errors
@@ -123,9 +121,9 @@ if [ ! -L /etc/nginx/sites-enabled/tree-monitor ]; then
     echo "✓ Site enabled"
 fi
 
-# Disable default site if it exists
+# Disable default site
 if [ -L /etc/nginx/sites-enabled/default ]; then
-    echo "Disabling default Nginx site..."
+    echo "Disabling default site..."
     rm -f /etc/nginx/sites-enabled/default
     echo "✓ Default site disabled"
 fi
@@ -145,10 +143,11 @@ if nginx -t; then
     echo "Nginx configuration updated!"
     echo "=========================================="
     echo ""
+    echo "CRITICAL: proxy_pass now has trailing slash: http://127.0.0.1:3001/"
+    echo ""
     echo "Test your application:"
-    echo "  Frontend: http://64.225.20.211"
-    echo "  API: http://64.225.20.211/api"
-    echo "  Health: http://64.225.20.211/health"
+    echo "  curl -I http://64.225.20.211/"
+    echo "  Expected: HTTP/1.1 307 Temporary Redirect → /login"
     echo ""
 else
     echo "❌ Nginx configuration has errors!"

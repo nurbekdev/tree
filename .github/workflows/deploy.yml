@@ -28,22 +28,15 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 644 ~/.ssh/known_hosts
           
-          # Debug: Check if key file exists and has content
-          echo "SSH key file exists: $(test -f ~/.ssh/id_rsa && echo 'yes' || echo 'no')"
-          echo "SSH key file size: $(wc -c < ~/.ssh/id_rsa) bytes"
-          echo "SSH key starts with: $(head -c 50 ~/.ssh/id_rsa)"
-          
-          # Test SSH connection with verbose output
-          echo "Testing SSH connection..."
-          ssh -v -i ~/.ssh/id_rsa \
+          # Test SSH connection (quick test)
+          ssh -i ~/.ssh/id_rsa \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
             -o ConnectTimeout=10 \
             -o BatchMode=yes \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             echo "SSH connection successful" || {
-              echo "SSH connection failed. Checking key format..."
-              head -1 ~/.ssh/id_rsa
+              echo "SSH connection failed"
               exit 1
             }
       
@@ -78,35 +71,21 @@ jobs:
             echo "Stopping existing containers..."
             docker compose -f docker-compose.prod.yml down || true
             
-            echo "Removing old containers..."
-            docker compose -f docker-compose.prod.yml rm -f || true
-            
-            echo "Checking for processes using ports 3000 and 3001..."
-            # Kill processes on port 3000 (backend)
-            lsof -ti:3000 | xargs -r kill -9 2>/dev/null || echo "No process found on port 3000"
-            # Kill processes on port 3001 (frontend)
-            lsof -ti:3001 | xargs -r kill -9 2>/dev/null || echo "No process found on port 3001"
-            
-            echo "Waiting for ports to be released..."
-            sleep 3
-            
-            echo "Cleaning up Docker resources..."
-            docker system prune -f || true
-            
-            echo "Building new containers..."
-            docker compose -f docker-compose.prod.yml build --no-cache
+            echo "Building new containers (with cache)..."
+            # Build only if needed, use cache for faster builds
+            docker compose -f docker-compose.prod.yml build
             
             echo "Starting containers..."
             docker compose -f docker-compose.prod.yml up -d
             
             echo "Waiting for services to be ready..."
-            sleep 10
+            sleep 5
             
             echo "Checking service status..."
             docker compose -f docker-compose.prod.yml ps
             
             echo "Recent logs:"
-            docker compose -f docker-compose.prod.yml logs --tail=50
+            docker compose -f docker-compose.prod.yml logs --tail=20
             
             echo ""
             echo "Fixing Nginx configuration..."
@@ -182,17 +161,24 @@ jobs:
             
             echo ""
             echo "Testing services..."
-            sleep 5
-            if curl -s http://127.0.0.1:3000/health > /dev/null; then
-                echo "✓ Backend is responding"
-            else
-                echo "⚠️  Backend not responding yet"
-            fi
-            if curl -s http://127.0.0.1:3001 > /dev/null; then
-                echo "✓ Frontend is responding"
-            else
-                echo "⚠️  Frontend not responding yet"
-            fi
+            # Quick health check
+            for i in {1..6}; do
+                if curl -s http://127.0.0.1:3000/health > /dev/null; then
+                    echo "✓ Backend is responding"
+                    break
+                fi
+                echo "Waiting for backend... ($i/6)"
+                sleep 2
+            done
+            
+            for i in {1..6}; do
+                if curl -s http://127.0.0.1:3001 > /dev/null; then
+                    echo "✓ Frontend is responding"
+                    break
+                fi
+                echo "Waiting for frontend... ($i/6)"
+                sleep 2
+            done
             
             echo ""
             echo "=========================================="
@@ -205,7 +191,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
           echo "Waiting for services to start..."
-          sleep 15
+          sleep 10
           echo "Checking API health..."
           curl -f http://${{ secrets.SERVER_HOST }}/health || echo "Health check failed, but deployment may still be in progress"
 
