@@ -47,11 +47,11 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://64.225.20.211/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://64.225.20.211}
     container_name: tree-monitor-frontend-prod
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://64.225.20.211/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://64.225.20.211}
     ports:
       - "127.0.0.1:3001:3001"  # Only accessible from localhost (Nginx will proxy)
     restart: unless-stopped

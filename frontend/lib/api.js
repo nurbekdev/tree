@@ -4,6 +4,7 @@
 
 import axios from 'axios';
 
+// API URL - should NOT include /api suffix as we add it in each endpoint
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 const api = axios.create({
