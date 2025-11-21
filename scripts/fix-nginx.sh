@@ -99,8 +99,12 @@ server {
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
         
-        # Handle Next.js 404s properly
+        # Handle Next.js properly - don't intercept errors
         proxy_intercept_errors off;
+        
+        # Retry on connection errors
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
+        proxy_next_upstream_tries 2;
     }
 }
 NGINX_EOF
