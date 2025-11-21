@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
     const result = await pool.query(
       `SELECT 
         t.id, t.tree_id, t.species, t.planted_year, t.notes, 
-        t.latitude, t.longitude, t.created_at, t.updated_at,
+        t.latitude, t.longitude, t.image_url, t.created_at, t.updated_at,
         t.last_seen_at, t.last_status,
         jsonb_build_object(
           'temp_c', tel.temp_c,
@@ -123,7 +123,8 @@ router.post('/', async (req, res) => {
       notes,
       latitude,
       longitude,
-      owner_contact
+      owner_contact,
+      image_url
     } = req.body;
 
     if (!tree_id || tree_id < 1 || tree_id > 3) {
@@ -144,10 +145,10 @@ router.post('/', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO trees (
         tree_id, species, planted_year, notes, 
-        latitude, longitude, owner_contact
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        latitude, longitude, owner_contact, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
-      [tree_id, species, planted_year, notes, latitude, longitude, owner_contact]
+      [tree_id, species, planted_year, notes, latitude, longitude, owner_contact, image_url]
     );
 
     res.status(201).json(result.rows[0]);
@@ -167,7 +168,8 @@ router.put('/:id', async (req, res) => {
       notes,
       latitude,
       longitude,
-      owner_contact
+      owner_contact,
+      image_url
     } = req.body;
 
     // Check if tree exists
@@ -189,10 +191,11 @@ router.put('/:id', async (req, res) => {
            latitude = COALESCE($4, latitude),
            longitude = COALESCE($5, longitude),
            owner_contact = COALESCE($6, owner_contact),
+           image_url = COALESCE($7, image_url),
            updated_at = NOW()
-       WHERE id = $7 OR tree_id = $7
+       WHERE id = $8 OR tree_id = $8
        RETURNING *`,
-      [species, planted_year, notes, latitude, longitude, owner_contact, treeId]
+      [species, planted_year, notes, latitude, longitude, owner_contact, image_url, treeId]
     );
 
     res.json(updateResult.rows[0]);

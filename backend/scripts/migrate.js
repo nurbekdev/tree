@@ -42,6 +42,7 @@ async function migrate() {
         latitude DECIMAL(10, 8),
         longitude DECIMAL(11, 8),
         owner_contact VARCHAR(100),
+        image_url TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
         last_seen_at TIMESTAMP,
@@ -49,6 +50,20 @@ async function migrate() {
       )
     `);
     console.log('✓ trees table created');
+    
+    // Add image_url column if it doesn't exist (for existing databases)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'trees' AND column_name = 'image_url'
+        ) THEN
+          ALTER TABLE trees ADD COLUMN image_url TEXT;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ image_url column added (if needed)');
 
     // Create telemetry table
     await pool.query(`
