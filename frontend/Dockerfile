@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies with clean cache
-RUN npm ci --prefer-offline --no-audit --progress=false && \
+# Using npm install instead of npm ci to handle lock file mismatches
+RUN npm install --prefer-offline --no-audit --progress=false && \
     npm cache clean --force
 
 # Copy source code
