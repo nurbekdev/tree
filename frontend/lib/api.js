@@ -34,15 +34,21 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    console.warn('No token found in localStorage for request to:', config.url);
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 // Handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Handle both 401 (Unauthorized) and 403 (Forbidden) as auth errors
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.warn('Authentication error:', error.response?.status, error.response?.data);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       // Only redirect if we're not already on login page
@@ -56,7 +62,8 @@ api.interceptors.response.use(
         status: error.response.status,
         statusText: error.response.statusText,
         data: error.response.data,
-        url: error.config?.url
+        url: error.config?.url,
+        headers: error.config?.headers
       });
     } else if (error.request) {
       console.error('API Request Error:', {

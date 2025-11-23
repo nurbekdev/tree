@@ -46,6 +46,16 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
+      console.log('Dashboard: No token found, redirecting to login')
+      router.push('/login')
+      return
+    }
+
+    // Validate token format (basic check)
+    if (token.length < 10) {
+      console.warn('Dashboard: Token seems invalid, clearing and redirecting')
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
       router.push('/login')
       return
     }
