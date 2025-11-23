@@ -94,7 +94,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        timeout-minutes: 30
+        timeout-minutes: 60
         run: |
           SERVER_PATH="${{ secrets.SERVER_PATH }}"
           cat > /tmp/deploy_script.sh << 'SCRIPT_EOF'
@@ -131,23 +131,28 @@ jobs:
           sleep 1
           
           echo "Building new containers..."
-          export COMPOSE_HTTP_TIMEOUT=1800
-          export DOCKER_CLIENT_TIMEOUT=1800
+          export COMPOSE_HTTP_TIMEOUT=3600
+          export DOCKER_CLIENT_TIMEOUT=3600
           export COMPOSE_PARALLEL_LIMIT=1
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
           
-          echo "Starting Docker build (this may take several minutes)..."
-          if docker compose -f docker-compose.prod.yml build --progress=plain 2>&1; then
-              echo "✓ Docker build completed successfully"
-          else
-              echo "❌ Docker build failed!"
-              echo "Checking container status..."
-              docker compose -f docker-compose.prod.yml ps
-              echo "Checking recent logs..."
-              docker compose -f docker-compose.prod.yml logs --tail=50
+          echo "Starting Docker build (this may take 10-15 minutes)..."
+          echo "Building backend first..."
+          docker compose -f docker-compose.prod.yml build backend --progress=plain --no-cache 2>&1 | tee /tmp/backend-build.log || {
+              echo "❌ Backend build failed!"
+              tail -100 /tmp/backend-build.log
               exit 1
-          fi
+          }
+          
+          echo "Building frontend (this may take 5-10 minutes)..."
+          docker compose -f docker-compose.prod.yml build frontend --progress=plain 2>&1 | tee /tmp/frontend-build.log || {
+              echo "❌ Frontend build failed!"
+              tail -100 /tmp/frontend-build.log
+              exit 1
+          }
+          
+          echo "✓ Docker build completed successfully"
           
           echo "Starting containers..."
           docker compose -f docker-compose.prod.yml up -d
