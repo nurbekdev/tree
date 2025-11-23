@@ -71,8 +71,16 @@ jobs:
             echo "Stopping existing containers..."
             docker compose -f docker-compose.prod.yml down || true
             
-            echo "Building new containers (with cache)..."
-            # Build only if needed, use cache for faster builds
+            echo "Cleaning up Docker to free space..."
+            # Clean up old images and containers
+            docker container prune -f || true
+            docker image prune -af || true
+            docker system prune -f || true
+            # Clean build cache but keep recent layers
+            docker builder prune -af --filter "until=24h" || true
+            
+            echo "Building new containers..."
+            # Build with cache for faster builds
             docker compose -f docker-compose.prod.yml build
             
             echo "Starting containers..."
