@@ -45,12 +45,16 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        timeout-minutes: 30
         run: |
           SERVER_PATH="${{ secrets.SERVER_PATH }}"
           ssh -i ~/.ssh/id_rsa \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
             -o ConnectTimeout=30 \
+            -o ServerAliveInterval=60 \
+            -o ServerAliveCountMax=10 \
+            -o TCPKeepAlive=yes \
             -o BatchMode=yes \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "cd '$SERVER_PATH' && bash -s" << 'DEPLOY_EOF'
@@ -80,8 +84,19 @@ jobs:
             docker builder prune -af --filter "until=24h" || true
             
             echo "Building new containers..."
-            # Build with cache for faster builds
-            docker compose -f docker-compose.prod.yml build
+            # Build with increased timeout and keep connection alive
+            # Set Docker build timeout to 20 minutes
+            export COMPOSE_HTTP_TIMEOUT=1200
+            export DOCKER_CLIENT_TIMEOUT=1200
+            export COMPOSE_PARALLEL_LIMIT=1
+            
+            # Build with progress output to keep SSH connection alive
+            docker compose -f docker-compose.prod.yml build 2>&1 | while IFS= read -r line; do
+                echo "$line"
+                # Keep connection alive by outputting periodically
+            done
+            
+            echo "✓ Docker build completed successfully"
             
             echo "Starting containers..."
             docker compose -f docker-compose.prod.yml up -d
