@@ -40,13 +40,23 @@ const corsOptions = {
       'http://localhost:3000',
       'http://localhost:3001',
       'http://172.20.10.3:3001',
-      'http://172.20.10.3:3000'
+      'http://172.20.10.3:3000',
+      'http://64.225.20.211',
+      'http://209.38.61.156'
     ].filter(Boolean);
     
+    // Also allow if origin matches server's own domain
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Log for debugging
+      console.log('CORS: Origin not in allowed list:', origin, 'Allowed:', allowedOrigins);
+      // In production, be more permissive - allow same-origin requests
+      if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('64.225.20.211') || origin.includes('209.38.61.156'))) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
     }
   },
   credentials: true
@@ -75,7 +85,9 @@ const io = new Server(server, {
         'http://localhost:3000',
         'http://localhost:3001',
         'http://172.20.10.3:3001',
-        'http://172.20.10.3:3000'
+        'http://172.20.10.3:3000',
+        'http://64.225.20.211',
+        'http://209.38.61.156'
       ].filter(Boolean);
       
       if (allowedOrigins.includes(origin)) {
@@ -83,7 +95,13 @@ const io = new Server(server, {
         callback(null, true);
       } else {
         console.warn('Socket.IO: Origin not allowed:', origin, 'Allowed origins:', allowedOrigins);
-        callback(new Error('Not allowed by CORS'));
+        // In production, be more permissive - allow same-origin requests
+        if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('64.225.20.211') || origin.includes('209.38.61.156'))) {
+          console.log('Socket.IO: Allowing origin based on domain match:', origin);
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
       }
     },
     methods: ["GET", "POST"],

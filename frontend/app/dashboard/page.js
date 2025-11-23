@@ -314,7 +314,22 @@ export default function DashboardPage() {
       
       setAlerts(alertsData)
     } catch (error) {
-      toast.error('Ma\'lumotlarni yuklashda xatolik')
+      console.error('Error loading data:', error)
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
+      })
+      
+      // Show more detailed error message
+      if (error.response) {
+        toast.error(`Ma'lumotlarni yuklashda xatolik: ${error.response.status} - ${error.response.statusText || error.response.data?.error || 'Noma'lum xatolik'}`)
+      } else if (error.request) {
+        toast.error('Server\'ga ulanib bo\'lmadi. Backend ishlamayapti.')
+      } else {
+        toast.error(`Ma'lumotlarni yuklashda xatolik: ${error.message}`)
+      }
     } finally {
       setLoading(false)
     }

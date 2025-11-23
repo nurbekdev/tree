@@ -4,26 +4,16 @@
 
 import { io } from 'socket.io-client';
 
-// Get API URL from environment variable or use current origin's backend
-// If frontend is on http://172.20.10.3:3001, backend should be on http://172.20.10.3:3000
+// Get Socket URL from environment variable or use current origin
 const getSocketURL = () => {
   // If NEXT_PUBLIC_API_URL is set, use it
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   
-  // Otherwise, try to infer from current window location (runtime)
+  // Otherwise, use current origin (works with Nginx proxy)
   if (typeof window !== 'undefined') {
-    const currentHost = window.location.hostname;
-    const currentPort = window.location.port;
-    
-    // If frontend is on port 3001, backend is likely on port 3000
-    if (currentPort === '3001') {
-      return `http://${currentHost}:3000`;
-    }
-    
-    // Default to localhost:3000
-    return 'http://localhost:3000';
+    return window.location.origin;
   }
   
   // Server-side fallback

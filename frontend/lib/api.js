@@ -5,7 +5,22 @@
 import axios from 'axios';
 
 // API URL - should NOT include /api suffix as we add it in each endpoint
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// In production, use relative URL if same domain, otherwise use full URL
+const getAPIURL = () => {
+  if (typeof window !== 'undefined') {
+    // Client-side: use environment variable or infer from current location
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL;
+    }
+    // If same origin, use relative URL (works with Nginx proxy)
+    const currentOrigin = window.location.origin;
+    return currentOrigin;
+  }
+  // Server-side: use environment variable or default
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+};
+
+const API_URL = getAPIURL();
 
 const api = axios.create({
   baseURL: API_URL,
