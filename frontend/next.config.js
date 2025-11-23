@@ -10,10 +10,6 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  // Reduce build time
-  experimental: {
-    optimizeCss: true,
-  },
   // Ensure proper routing
   async redirects() {
     return [
