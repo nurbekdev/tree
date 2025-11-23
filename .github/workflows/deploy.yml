@@ -95,12 +95,151 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH }}
         timeout-minutes: 30
-        continue-on-error: false
         run: |
           SERVER_PATH="${{ secrets.SERVER_PATH }}"
+          cat > /tmp/deploy_script.sh << 'SCRIPT_EOF'
+          set -e
+          echo "=========================================="
+          echo "Starting deployment..."
+          echo "=========================================="
           
-          # Try SSH deployment
-          if ssh -i ~/.ssh/id_rsa \
+          pwd
+          
+          echo "Pulling latest code..."
+          git fetch origin
+          git reset --hard origin/main || git reset --hard origin/master
+          
+          echo "Deploying backend..."
+          cd backend
+          
+          echo "Stopping existing containers..."
+          docker compose -f docker-compose.prod.yml down || true
+          
+          echo "Cleaning up Docker to free space..."
+          docker container prune -f || true
+          docker image prune -af || true
+          docker system prune -f || true
+          docker builder prune -af --filter "until=24h" || true
+          
+          echo "Building new containers..."
+          export COMPOSE_HTTP_TIMEOUT=1200
+          export DOCKER_CLIENT_TIMEOUT=1200
+          export COMPOSE_PARALLEL_LIMIT=1
+          
+          docker compose -f docker-compose.prod.yml build 2>&1 | while IFS= read -r line; do
+              echo "$line"
+          done
+          
+          echo "✓ Docker build completed successfully"
+          
+          echo "Starting containers..."
+          docker compose -f docker-compose.prod.yml up -d
+          
+          echo "Waiting for services to be ready..."
+          sleep 5
+          
+          echo "Checking service status..."
+          docker compose -f docker-compose.prod.yml ps
+          
+          echo "Recent logs:"
+          docker compose -f docker-compose.prod.yml logs --tail=20
+          
+          echo ""
+          echo "Fixing Nginx configuration..."
+          if [ -f ../scripts/fix-nginx.sh ]; then
+              chmod +x ../scripts/fix-nginx.sh
+              ../scripts/fix-nginx.sh
+          else
+              echo "⚠️  Nginx fix script not found, configuring manually..."
+              printf '%s\n' \
+                  'server {' \
+                  '    listen 80;' \
+                  '    server_name _;' \
+                  '    client_max_body_size 10M;' \
+                  '    location /api {' \
+                  '        proxy_pass http://127.0.0.1:3000/api;' \
+                  '        proxy_http_version 1.1;' \
+                  '        proxy_set_header Upgrade $http_upgrade;' \
+                  '        proxy_set_header Connection '\''upgrade'\'';' \
+                  '        proxy_set_header Host $host;' \
+                  '        proxy_set_header X-Real-IP $remote_addr;' \
+                  '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+                  '        proxy_set_header X-Forwarded-Proto $scheme;' \
+                  '        proxy_cache_bypass $http_upgrade;' \
+                  '        proxy_redirect off;' \
+                  '    }' \
+                  '    location /socket.io {' \
+                  '        proxy_pass http://127.0.0.1:3000;' \
+                  '        proxy_http_version 1.1;' \
+                  '        proxy_set_header Upgrade $http_upgrade;' \
+                  '        proxy_set_header Connection "upgrade";' \
+                  '        proxy_set_header Host $host;' \
+                  '        proxy_set_header X-Real-IP $remote_addr;' \
+                  '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+                  '        proxy_set_header X-Forwarded-Proto $scheme;' \
+                  '    }' \
+                  '    location /health {' \
+                  '        proxy_pass http://127.0.0.1:3000;' \
+                  '        proxy_set_header Host $host;' \
+                  '    }' \
+                  '    location /_next/ {' \
+                  '        proxy_pass http://127.0.0.1:3001;' \
+                  '        proxy_http_version 1.1;' \
+                  '        proxy_set_header Host $host;' \
+                  '        proxy_cache_valid 200 60m;' \
+                  '        add_header Cache-Control "public, immutable";' \
+                  '    }' \
+                  '    location / {' \
+                  '        proxy_pass http://127.0.0.1:3001;' \
+                  '        proxy_http_version 1.1;' \
+                  '        proxy_set_header Upgrade $http_upgrade;' \
+                  '        proxy_set_header Connection '\''upgrade'\'';' \
+                  '        proxy_set_header Host $host;' \
+                  '        proxy_set_header X-Real-IP $remote_addr;' \
+                  '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+                  '        proxy_set_header X-Forwarded-Proto $scheme;' \
+                  '        proxy_cache_bypass $http_upgrade;' \
+                  '        proxy_redirect off;' \
+                  '        proxy_set_header X-Forwarded-Host $host;' \
+                  '        proxy_set_header X-Forwarded-Port $server_port;' \
+                  '        proxy_connect_timeout 60s;' \
+                  '        proxy_send_timeout 60s;' \
+                  '        proxy_read_timeout 60s;' \
+                  '    }' \
+                  '}' > /etc/nginx/sites-available/tree-monitor
+              if [ ! -f /etc/nginx/sites-enabled/tree-monitor ]; then
+                  ln -s /etc/nginx/sites-available/tree-monitor /etc/nginx/sites-enabled/
+              fi
+              nginx -t && systemctl reload nginx
+          fi
+          
+          echo ""
+          echo "Testing services..."
+          for i in {1..6}; do
+              if curl -s http://127.0.0.1:3000/health > /dev/null; then
+                  echo "✓ Backend is responding"
+                  break
+              fi
+              echo "Waiting for backend... ($i/6)"
+              sleep 2
+          done
+          
+          for i in {1..6}; do
+              if curl -s http://127.0.0.1:3001 > /dev/null; then
+                  echo "✓ Frontend is responding"
+                  break
+              fi
+              echo "Waiting for frontend... ($i/6)"
+              sleep 2
+          done
+          
+          echo ""
+          echo "=========================================="
+          echo "Deployment complete!"
+          echo "=========================================="
+          SCRIPT_EOF
+          
+          ssh -i ~/.ssh/id_rsa \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
             -o ConnectTimeout=60 \
@@ -109,176 +248,7 @@ jobs:
             -o TCPKeepAlive=yes \
             -o BatchMode=yes \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "cd '$SERVER_PATH' && bash -s" << 'DEPLOY_EOF'
-      
-      - name: Deploy to server
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        timeout-minutes: 30
-        run: |
-          SERVER_PATH="${{ secrets.SERVER_PATH }}"
-          ssh -i ~/.ssh/id_rsa \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=60 \
-            -o ServerAliveCountMax=10 \
-            -o TCPKeepAlive=yes \
-            -o BatchMode=yes \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "cd '$SERVER_PATH' && bash -s" << 'DEPLOY_EOF'
-            set -e
-            echo "=========================================="
-            echo "Starting deployment..."
-            echo "=========================================="
-            
-            pwd
-            
-            echo "Pulling latest code..."
-            git fetch origin
-            git reset --hard origin/main || git reset --hard origin/master
-            
-            echo "Deploying backend..."
-            cd backend
-            
-            echo "Stopping existing containers..."
-            docker compose -f docker-compose.prod.yml down || true
-            
-            echo "Cleaning up Docker to free space..."
-            # Clean up old images and containers
-            docker container prune -f || true
-            docker image prune -af || true
-            docker system prune -f || true
-            # Clean build cache but keep recent layers
-            docker builder prune -af --filter "until=24h" || true
-            
-            echo "Building new containers..."
-            # Build with increased timeout and keep connection alive
-            # Set Docker build timeout to 20 minutes
-            export COMPOSE_HTTP_TIMEOUT=1200
-            export DOCKER_CLIENT_TIMEOUT=1200
-            export COMPOSE_PARALLEL_LIMIT=1
-            
-            # Build with progress output to keep SSH connection alive
-            docker compose -f docker-compose.prod.yml build 2>&1 | while IFS= read -r line; do
-                echo "$line"
-                # Keep connection alive by outputting periodically
-            done
-            
-            echo "✓ Docker build completed successfully"
-            
-            echo "Starting containers..."
-            docker compose -f docker-compose.prod.yml up -d
-            
-            echo "Waiting for services to be ready..."
-            sleep 5
-            
-            echo "Checking service status..."
-            docker compose -f docker-compose.prod.yml ps
-            
-            echo "Recent logs:"
-            docker compose -f docker-compose.prod.yml logs --tail=20
-            
-            echo ""
-            echo "Fixing Nginx configuration..."
-            if [ -f ../scripts/fix-nginx.sh ]; then
-                chmod +x ../scripts/fix-nginx.sh
-                ../scripts/fix-nginx.sh
-            else
-                echo "⚠️  Nginx fix script not found, configuring manually..."
-                # Create Nginx config using printf to avoid nested heredoc issues
-                printf '%s\n' \
-                    'server {' \
-                    '    listen 80;' \
-                    '    server_name _;' \
-                    '    client_max_body_size 10M;' \
-                    '    location /api {' \
-                    '        proxy_pass http://127.0.0.1:3000/api;' \
-                    '        proxy_http_version 1.1;' \
-                    '        proxy_set_header Upgrade $http_upgrade;' \
-                    '        proxy_set_header Connection '\''upgrade'\'';' \
-                    '        proxy_set_header Host $host;' \
-                    '        proxy_set_header X-Real-IP $remote_addr;' \
-                    '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-                    '        proxy_set_header X-Forwarded-Proto $scheme;' \
-                    '        proxy_cache_bypass $http_upgrade;' \
-                    '        proxy_redirect off;' \
-                    '    }' \
-                    '    location /socket.io {' \
-                    '        proxy_pass http://127.0.0.1:3000;' \
-                    '        proxy_http_version 1.1;' \
-                    '        proxy_set_header Upgrade $http_upgrade;' \
-                    '        proxy_set_header Connection "upgrade";' \
-                    '        proxy_set_header Host $host;' \
-                    '        proxy_set_header X-Real-IP $remote_addr;' \
-                    '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-                    '        proxy_set_header X-Forwarded-Proto $scheme;' \
-                    '    }' \
-                    '    location /health {' \
-                    '        proxy_pass http://127.0.0.1:3000;' \
-                    '        proxy_set_header Host $host;' \
-                    '    }' \
-                    '    location /_next/ {' \
-                    '        proxy_pass http://127.0.0.1:3001;' \
-                    '        proxy_http_version 1.1;' \
-                    '        proxy_set_header Host $host;' \
-                    '        proxy_cache_valid 200 60m;' \
-                    '        add_header Cache-Control "public, immutable";' \
-                    '    }' \
-                    '    location / {' \
-                    '        proxy_pass http://127.0.0.1:3001;' \
-                    '        proxy_http_version 1.1;' \
-                    '        proxy_set_header Upgrade $http_upgrade;' \
-                    '        proxy_set_header Connection '\''upgrade'\'';' \
-                    '        proxy_set_header Host $host;' \
-                    '        proxy_set_header X-Real-IP $remote_addr;' \
-                    '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-                    '        proxy_set_header X-Forwarded-Proto $scheme;' \
-                    '        proxy_cache_bypass $http_upgrade;' \
-                    '        proxy_redirect off;' \
-                    '        proxy_set_header X-Forwarded-Host $host;' \
-                    '        proxy_set_header X-Forwarded-Port $server_port;' \
-                    '        proxy_connect_timeout 60s;' \
-                    '        proxy_send_timeout 60s;' \
-                    '        proxy_read_timeout 60s;' \
-                    '    }' \
-                    '}' > /etc/nginx/sites-available/tree-monitor
-                # Enable site if not already enabled
-                if [ ! -f /etc/nginx/sites-enabled/tree-monitor ]; then
-                    ln -s /etc/nginx/sites-available/tree-monitor /etc/nginx/sites-enabled/
-                fi
-                # Test and reload nginx
-                nginx -t && systemctl reload nginx
-            fi
-            
-            echo ""
-            echo "Testing services..."
-            # Quick health check
-            for i in {1..6}; do
-                if curl -s http://127.0.0.1:3000/health > /dev/null; then
-                    echo "✓ Backend is responding"
-                    break
-                fi
-                echo "Waiting for backend... ($i/6)"
-                sleep 2
-            done
-            
-            for i in {1..6}; do
-                if curl -s http://127.0.0.1:3001 > /dev/null; then
-                    echo "✓ Frontend is responding"
-                    break
-                fi
-                echo "Waiting for frontend... ($i/6)"
-                sleep 2
-            done
-            
-            echo ""
-            echo "=========================================="
-            echo "Deployment complete!"
-            echo "=========================================="
-          DEPLOY_EOF
+            "cd '$SERVER_PATH' && bash" < /tmp/deploy_script.sh
       
       - name: Health Check
         env:
