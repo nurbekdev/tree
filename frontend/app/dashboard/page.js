@@ -324,7 +324,8 @@ export default function DashboardPage() {
       
       // Show more detailed error message
       if (error.response) {
-        toast.error(`Ma'lumotlarni yuklashda xatolik: ${error.response.status} - ${error.response.statusText || error.response.data?.error || 'Noma'lum xatolik'}`)
+        const errorMsg = error.response.data?.error || error.response.statusText || 'Noma\'lum xatolik'
+        toast.error(`Ma'lumotlarni yuklashda xatolik: ${error.response.status} - ${errorMsg}`)
       } else if (error.request) {
         toast.error('Server\'ga ulanib bo\'lmadi. Backend ishlamayapti.')
       } else {
