@@ -24,21 +24,52 @@ jobs:
           echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
-          # Add server to known hosts
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          # Add server to known hosts with retry
+          echo "Adding server to known hosts..."
+          for i in {1..5}; do
+            if ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null; then
+              echo "✓ Server added to known hosts"
+              break
+            fi
+            echo "Retry $i/5..."
+            sleep 2
+          done
           chmod 644 ~/.ssh/known_hosts
           
-          # Test SSH connection (quick test)
-          ssh -i ~/.ssh/id_rsa \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -o ConnectTimeout=10 \
-            -o BatchMode=yes \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            echo "SSH connection successful" || {
-              echo "SSH connection failed"
-              exit 1
-            }
+          # Test SSH connection with retry and longer timeout
+          echo "Testing SSH connection..."
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if ssh -i ~/.ssh/id_rsa \
+              -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=~/.ssh/known_hosts \
+              -o ConnectTimeout=30 \
+              -o ServerAliveInterval=10 \
+              -o ServerAliveCountMax=3 \
+              -o BatchMode=yes \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              echo "SSH connection successful"; then
+              echo "✓ SSH connection established"
+              exit 0
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "SSH connection attempt $RETRY_COUNT/$MAX_RETRIES failed"
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "Waiting 5 seconds before retry..."
+                sleep 5
+              fi
+            fi
+          done
+          
+          echo "❌ SSH connection failed after $MAX_RETRIES attempts"
+          echo "Please check:"
+          echo "1. Server is running and accessible"
+          echo "2. SSH key is correct in GitHub Secrets"
+          echo "3. Server firewall allows SSH (port 22)"
+          echo "4. Server IP address is correct"
+          exit 1
       
       - name: Deploy to server
         env:
