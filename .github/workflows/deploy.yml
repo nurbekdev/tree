@@ -115,11 +115,20 @@ jobs:
           echo "Stopping existing containers..."
           docker compose -f docker-compose.prod.yml down || true
           
+          echo "Checking for processes using ports 3000 and 3001..."
+          lsof -ti:3000 | xargs -r kill -9 2>/dev/null || echo "No process on port 3000"
+          lsof -ti:3001 | xargs -r kill -9 2>/dev/null || echo "No process on port 3001"
+          sleep 2
+          
           echo "Cleaning up Docker to free space..."
           docker container prune -f || true
           docker image prune -af || true
           docker system prune -f || true
           docker builder prune -af --filter "until=24h" || true
+          
+          echo "Removing any existing containers with same names..."
+          docker rm -f tree-monitor-api-prod tree-monitor-frontend-prod tree-monitor-db-prod 2>/dev/null || true
+          sleep 1
           
           echo "Building new containers..."
           export COMPOSE_HTTP_TIMEOUT=1200
