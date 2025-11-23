@@ -97,7 +97,18 @@ jobs:
         timeout-minutes: 60
         run: |
           SERVER_PATH="${{ secrets.SERVER_PATH }}"
-          cat > /tmp/deploy_script.sh << 'SCRIPT_EOF'
+          
+          # Execute deployment directly via SSH with heredoc
+          ssh -i ~/.ssh/id_rsa \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -o ConnectTimeout=60 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=20 \
+            -o TCPKeepAlive=yes \
+            -o BatchMode=yes \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "cd '$SERVER_PATH' && bash -s" << 'DEPLOY_SCRIPT'
           set -e
           echo "=========================================="
           echo "Starting deployment..."
@@ -259,29 +270,7 @@ jobs:
           echo "=========================================="
           echo "Deployment complete!"
           echo "=========================================="
-          SCRIPT_EOF
-          
-          # Use nohup to keep script running even if SSH disconnects
-          ssh -i ~/.ssh/id_rsa \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -o ConnectTimeout=60 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=20 \
-            -o TCPKeepAlive=yes \
-            -o BatchMode=yes \
-            -o LogLevel=ERROR \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "cd '$SERVER_PATH' && nohup bash < /tmp/deploy_script.sh > /tmp/deploy.log 2>&1 & sleep 1 && tail -f /tmp/deploy.log" || {
-              echo "SSH command failed, checking if deployment is still running..."
-              ssh -i ~/.ssh/id_rsa \
-                -o StrictHostKeyChecking=no \
-                -o UserKnownHostsFile=~/.ssh/known_hosts \
-                -o ConnectTimeout=30 \
-                ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-                "tail -100 /tmp/deploy.log || echo 'No log file found'"
-              exit 1
-          }
+          DEPLOY_SCRIPT
       
       - name: Health Check
         env:
