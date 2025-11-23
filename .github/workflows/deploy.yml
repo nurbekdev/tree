@@ -149,21 +149,44 @@ jobs:
           export COMPOSE_DOCKER_CLI_BUILD=1
           
           echo "Starting Docker build (this may take 10-15 minutes)..."
+          
+          # Build backend (without --no-cache for faster builds, use cache when possible)
           echo "Building backend first..."
-          docker compose -f docker-compose.prod.yml build backend --progress=plain --no-cache 2>&1 | tee /tmp/backend-build.log || {
+          if docker compose -f docker-compose.prod.yml build backend --progress=plain 2>&1 | tee /tmp/backend-build.log; then
+              echo "✓ Backend build completed successfully"
+          else
               echo "❌ Backend build failed!"
-              tail -100 /tmp/backend-build.log
-              exit 1
-          }
+              echo "Last 50 lines of build log:"
+              tail -50 /tmp/backend-build.log
+              echo "Trying to build without cache..."
+              if docker compose -f docker-compose.prod.yml build backend --no-cache --progress=plain 2>&1 | tee /tmp/backend-build.log; then
+                  echo "✓ Backend build completed successfully (without cache)"
+              else
+                  echo "❌ Backend build failed even without cache!"
+                  tail -50 /tmp/backend-build.log
+                  exit 1
+              fi
+          fi
           
+          # Build frontend (without --no-cache for faster builds, use cache when possible)
           echo "Building frontend (this may take 5-10 minutes)..."
-          docker compose -f docker-compose.prod.yml build frontend --progress=plain 2>&1 | tee /tmp/frontend-build.log || {
+          if docker compose -f docker-compose.prod.yml build frontend --progress=plain 2>&1 | tee /tmp/frontend-build.log; then
+              echo "✓ Frontend build completed successfully"
+          else
               echo "❌ Frontend build failed!"
-              tail -100 /tmp/frontend-build.log
-              exit 1
-          }
+              echo "Last 50 lines of build log:"
+              tail -50 /tmp/frontend-build.log
+              echo "Trying to build without cache..."
+              if docker compose -f docker-compose.prod.yml build frontend --no-cache --progress=plain 2>&1 | tee /tmp/frontend-build.log; then
+                  echo "✓ Frontend build completed successfully (without cache)"
+              else
+                  echo "❌ Frontend build failed even without cache!"
+                  tail -50 /tmp/frontend-build.log
+                  exit 1
+              fi
+          fi
           
-          echo "✓ Docker build completed successfully"
+          echo "✓ All Docker builds completed successfully"
           
           echo "Starting containers..."
           docker compose -f docker-compose.prod.yml up -d
