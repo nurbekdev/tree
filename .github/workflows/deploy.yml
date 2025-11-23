@@ -131,15 +131,23 @@ jobs:
           sleep 1
           
           echo "Building new containers..."
-          export COMPOSE_HTTP_TIMEOUT=1200
-          export DOCKER_CLIENT_TIMEOUT=1200
+          export COMPOSE_HTTP_TIMEOUT=1800
+          export DOCKER_CLIENT_TIMEOUT=1800
           export COMPOSE_PARALLEL_LIMIT=1
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
           
-          docker compose -f docker-compose.prod.yml build 2>&1 | while IFS= read -r line; do
-              echo "$line"
-          done
-          
-          echo "✓ Docker build completed successfully"
+          echo "Starting Docker build (this may take several minutes)..."
+          if docker compose -f docker-compose.prod.yml build --progress=plain 2>&1; then
+              echo "✓ Docker build completed successfully"
+          else
+              echo "❌ Docker build failed!"
+              echo "Checking container status..."
+              docker compose -f docker-compose.prod.yml ps
+              echo "Checking recent logs..."
+              docker compose -f docker-compose.prod.yml logs --tail=50
+              exit 1
+          fi
           
           echo "Starting containers..."
           docker compose -f docker-compose.prod.yml up -d
