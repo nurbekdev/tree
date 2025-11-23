@@ -28,6 +28,12 @@ const MapComponent = dynamic(() => import('./MapComponent'), {
   loading: () => <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">Xarita yuklanmoqda...</div>
 })
 
+// Dynamically import 3D Tree visualization to avoid SSR issues
+const Tree3D = dynamic(() => import('./Tree3D'), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-gradient-to-b from-sky-100 to-blue-50 rounded-lg flex items-center justify-center text-gray-500">3D model yuklanmoqda...</div>
+})
+
 const translations = {
   title: "Daraxt ma'lumotlari",
   treeId: "Daraxt ID",
@@ -183,7 +189,16 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
         humidity_pct: (latest.humidity_pct === null || latest.humidity_pct === undefined || latest.humidity_pct === 0) ? null : latest.humidity_pct,
         mq2: latest.mq2 || 0,
         status: latest.status,
-        timestamp: latest.timestamp
+        timestamp: latest.timestamp,
+        // MPU6050 data for 3D visualization
+        mpu_accel_x: latest.mpu_accel_x || 0,
+        mpu_accel_y: latest.mpu_accel_y || 0,
+        mpu_accel_z: latest.mpu_accel_z !== undefined ? latest.mpu_accel_z : -1,
+        mpu_gyro_x: latest.mpu_gyro_x || 0,
+        mpu_gyro_y: latest.mpu_gyro_y || 0,
+        mpu_gyro_z: latest.mpu_gyro_z || 0,
+        mpu_tilt: latest.mpu_tilt || false,
+        mpu_cut_detected: latest.mpu_cut_detected || false
       }
       console.log('Setting initial currentTelemetry from treeData (first load only):', initialTelemetry) // Debug log
       setCurrentTelemetry(initialTelemetry)
@@ -249,7 +264,16 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
             humidity_pct: (data.humidity_pct === null || data.humidity_pct === undefined || data.humidity_pct === 0) ? null : data.humidity_pct,
             mq2: data.mq2 || 0,
             status: data.status,
-            timestamp: timestamp.toISOString()  // ISO string
+            timestamp: timestamp.toISOString(),  // ISO string
+            // MPU6050 data for 3D visualization
+            mpu_accel_x: data.mpu_accel_x || 0,
+            mpu_accel_y: data.mpu_accel_y || 0,
+            mpu_accel_z: data.mpu_accel_z !== undefined ? data.mpu_accel_z : -1, // Default to -1 (pointing down)
+            mpu_gyro_x: data.mpu_gyro_x || 0,
+            mpu_gyro_y: data.mpu_gyro_y || 0,
+            mpu_gyro_z: data.mpu_gyro_z || 0,
+            mpu_tilt: data.mpu_tilt || false,
+            mpu_cut_detected: data.mpu_cut_detected || false
           }
           console.log('Setting currentTelemetry to:', newTelemetry) // Debug log
           console.log('Previous currentTelemetry:', currentTelemetry) // Debug log
@@ -589,6 +613,71 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
   const activeAlerts = allAlerts.filter(a => !a.acknowledged)
   const acknowledgedAlerts = allAlerts.filter(a => a.acknowledged)
 
+  // Get latest MPU6050 data from last 30 days for offline trees
+  const getLatestMPU6050Data = () => {
+    // If tree is online and has current telemetry, use it
+    if (!isOffline && currentTelemetry) {
+      return {
+        accelX: currentTelemetry.mpu_accel_x || 0,
+        accelY: currentTelemetry.mpu_accel_y || 0,
+        accelZ: currentTelemetry.mpu_accel_z !== undefined ? currentTelemetry.mpu_accel_z : -1,
+        gyroX: currentTelemetry.mpu_gyro_x || 0,
+        gyroY: currentTelemetry.mpu_gyro_y || 0,
+        gyroZ: currentTelemetry.mpu_gyro_z || 0,
+        isCut: currentTelemetry.mpu_cut_detected || false,
+        isTilt: currentTelemetry.mpu_tilt || false,
+      }
+    }
+    
+    // If offline, search in last 30 days of telemetry data
+    if (isOffline && currentTree.telemetry && currentTree.telemetry.length > 0) {
+      const now = new Date()
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      
+      // Find the most recent telemetry with MPU6050 data
+      const telemetryWithMPU = currentTree.telemetry
+        .filter(t => {
+          const date = new Date(t.timestamp)
+          return date >= thirtyDaysAgo && (
+            (t.mpu_accel_x !== null && t.mpu_accel_x !== undefined) ||
+            (t.mpu_accel_y !== null && t.mpu_accel_y !== undefined) ||
+            (t.mpu_accel_z !== null && t.mpu_accel_z !== undefined) ||
+            (t.mpu_gyro_x !== null && t.mpu_gyro_x !== undefined) ||
+            (t.mpu_gyro_y !== null && t.mpu_gyro_y !== undefined) ||
+            (t.mpu_gyro_z !== null && t.mpu_gyro_z !== undefined)
+          )
+        })
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+      
+      if (telemetryWithMPU) {
+        return {
+          accelX: telemetryWithMPU.mpu_accel_x || 0,
+          accelY: telemetryWithMPU.mpu_accel_y || 0,
+          accelZ: telemetryWithMPU.mpu_accel_z !== undefined ? telemetryWithMPU.mpu_accel_z : -1,
+          gyroX: telemetryWithMPU.mpu_gyro_x || 0,
+          gyroY: telemetryWithMPU.mpu_gyro_y || 0,
+          gyroZ: telemetryWithMPU.mpu_gyro_z || 0,
+          isCut: telemetryWithMPU.mpu_cut_detected || false,
+          isTilt: telemetryWithMPU.mpu_tilt || false,
+        }
+      }
+    }
+    
+    // Default values if no data found
+    return {
+      accelX: 0,
+      accelY: 0,
+      accelZ: -1,
+      gyroX: 0,
+      gyroY: 0,
+      gyroZ: 0,
+      isCut: false,
+      isTilt: false,
+    }
+  }
+
+  const mpu6050Data = getLatestMPU6050Data()
+
   // Refresh tree data when tree prop changes
   useEffect(() => {
     setTreeData(tree)
@@ -740,6 +829,41 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                   <p className="text-xs text-yellow-700">Qurilma ulanib, ma'lumot yuborishni kutmoqda</p>
                 </div>
               ) : null}
+
+              {/* 3D Tree Visualization - Show always (online or offline with historical data) */}
+              <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-sm">
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
+                  <span className="text-lg">🌳</span>
+                  3D Daraxt Ko'rinishi
+                  {isOffline && (
+                    <span className="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      📊 Tarixiy ma'lumot
+                    </span>
+                  )}
+                </h3>
+                <Tree3D
+                  accelX={mpu6050Data.accelX}
+                  accelY={mpu6050Data.accelY}
+                  accelZ={mpu6050Data.accelZ}
+                  gyroX={mpu6050Data.gyroX}
+                  gyroY={mpu6050Data.gyroY}
+                  gyroZ={mpu6050Data.gyroZ}
+                  isCut={mpu6050Data.isCut}
+                  isTilt={mpu6050Data.isTilt}
+                />
+                {isOffline && (
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    {mpu6050Data.accelX !== 0 || mpu6050Data.accelY !== 0 || mpu6050Data.accelZ !== -1
+                      ? "Oxirgi 30 kunlik ma'lumotlardan MPU6050 ko'rsatilmoqda"
+                      : "MPU6050 ma'lumotlari topilmadi"}
+                  </p>
+                )}
+                {!isOffline && !currentTelemetry && (
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    MPU6050 ma'lumotlari kutilmoqda...
+                  </p>
+                )}
+              </div>
 
               {/* Metadata Section */}
               <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-sm">

@@ -14,7 +14,7 @@
     "success": "Muvaffaqiyatli"
   },
   "auth": {
-    "title": "Daraxt Monitoring Tizimi",
+    "title": "O'rmon agentligi",
     "username": "Foydalanuvchi nomi",
     "password": "Parol",
     "loginButton": "Tizimga kirish",
@@ -22,7 +22,7 @@
     "loginRequired": "Tizimga kirish talab qilinadi"
   },
   "dashboard": {
-    "title": "Boshqaruv paneli",
+    "title": "O'rmon agentligi",
     "trees": "Daraxtlar",
     "alerts": "Ogohlantirishlar",
     "lastSeen": "Oxirgi ko'rilgan",

@@ -2,7 +2,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata = {
-  title: 'Daraxt Monitoring Tizimi',
+  title: "O'rmon agentligi",
   description: 'Smart Agricultural Tree Monitoring System',
 }
 

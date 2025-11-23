@@ -13,9 +13,14 @@
 #include <RF24.h>
 #include <DHT.h>
 #include <Wire.h>
+#include <math.h>
 // MPU6050 - Using Adafruit MPU6050 library or Wire-based implementation
 // If using Adafruit library: #include <Adafruit_MPU6050.h>
 // For now, we'll use a simple Wire-based implementation
+
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif
 
 // ==================== CONFIGURATION ====================
 #define TREE_ID 1  // Change to 1, 2, or 3 for each transmitter
@@ -41,8 +46,10 @@
 
 // Thresholds
 #define MQ2_ALERT_THRESHOLD 400  // Adjust based on calibration
-#define MPU_TILT_THRESHOLD 0.5   // Acceleration threshold for tilt
-#define MPU_CUT_THRESHOLD 2.0    // Abrupt change threshold for cut detection
+#define MPU_TILT_THRESHOLD 0.5   // Acceleration threshold for tilt (g)
+#define MPU_CUT_THRESHOLD 2.0    // Abrupt change threshold for cut detection (g)
+#define MPU_CUT_ANGLE_THRESHOLD 45.0  // Angle threshold in degrees for sustained tilt (cut detection)
+#define MPU_CUT_TIME_THRESHOLD 3000   // Time in ms for sustained tilt to be considered cut
 
 // nRF24L01 Configuration
 const uint64_t BASE_PIPE = 0xF0F0F0F0E1LL;  // Base station address
@@ -61,6 +68,8 @@ unsigned long lastDHTRead = 0;  // Track last DHT22 read time
 bool alertState = false;
 float lastAccel[3] = {0, 0, 0};
 unsigned long lastPacketTime = 0;
+unsigned long tiltStartTime = 0;  // Track when tilt started
+bool wasTilted = false;  // Track previous tilt state
 
 // ==================== SETUP ====================
 void setup() {
@@ -178,15 +187,45 @@ void setup() {
     Serial.println("DHT22 requires stable power supply and proper wiring");
   }
   
-  // Initialize MPU6050
-  Wire.begin();
+  // Initialize MPU6050 with correct I2C pins (D2=SDA, D1=SCL)
+  pinMode(4, INPUT_PULLUP);  // SDA = D2
+  pinMode(5, INPUT_PULLUP);  // SCL = D1
+  Wire.begin(4, 5);  // SDA=D2, SCL=D1
+  Wire.setClock(100000);  // 100kHz I2C speed
+  
+  Serial.println("I2C initialized (SDA=D2, SCL=D1)...");
+  delay(100);
+  
+  // Scan I2C devices
+  Serial.println("Scanning I2C devices...");
+  byte count = 0;
+  for(byte address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    byte error = Wire.endTransmission();
+    if (error == 0) {
+      Serial.print("Found device at 0x");
+      if(address < 16) Serial.print("0");
+      Serial.print(address, HEX);
+      if(address == 0x68 || address == 0x69) {
+        Serial.print(" (MPU6050)");
+      }
+      Serial.println();
+      count++;
+    }
+  }
+  if(count == 0) {
+    Serial.println("WARNING: No I2C devices found!");
+  }
+  
+  // Wake up MPU6050
   Wire.beginTransmission(MPU6050_ADDR);
   Wire.write(0x6B); // PWR_MGMT_1 register
-  Wire.write(0);    // Wake up MPU6050
+  Wire.write(0);    // Wake up MPU6050 (clear sleep bit)
   if (Wire.endTransmission() == 0) {
-    Serial.println("MPU6050 initialized");
+    Serial.println("✓ MPU6050 initialized successfully");
   } else {
-    Serial.println("WARNING: MPU6050 initialization failed!");
+    Serial.println("❌ WARNING: MPU6050 initialization failed!");
+    Serial.println("Check wiring: SDA->D2, SCL->D1, VCC->3.3V, GND->GND");
   }
   
   // Initialize MQ-2
@@ -271,12 +310,44 @@ void loop() {
     // Calculate tilt (deviation from vertical)
     float accelMagnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
     
-    // Check for tilt (if not close to 1g vertical)
-    if (abs(accelMagnitude - 9.8) > MPU_TILT_THRESHOLD) {
-      tiltDetected = true;
+    // Calculate tilt angle from vertical (0 = vertical, 90 = horizontal)
+    // When vertical: accelZ ≈ -1g, accelX ≈ 0, accelY ≈ 0
+    // When tilted: accelX and accelY show tilt direction
+    float tiltAngle = 0;
+    if (accelMagnitude > 0.1) {
+      // Calculate angle from vertical using Z component
+      // cos(angle) = accelZ / magnitude, so angle = acos(accelZ / magnitude)
+      float normalizedZ = accelZ / accelMagnitude;
+      // Clamp to avoid NaN from acos
+      if (normalizedZ > 1.0) normalizedZ = 1.0;
+      if (normalizedZ < -1.0) normalizedZ = -1.0;
+      tiltAngle = acos(-normalizedZ) * (180.0 / PI); // Negative because Z points down when vertical
     }
     
-    // Check for abrupt cut (sudden change in acceleration)
+    // Check for tilt (if angle is significant)
+    if (tiltAngle > MPU_TILT_THRESHOLD * 10) { // Convert threshold to degrees (roughly)
+      tiltDetected = true;
+      
+      // Track sustained tilt for cut detection
+      if (!wasTilted) {
+        // Just started tilting
+        tiltStartTime = currentTime;
+        wasTilted = true;
+      } else {
+        // Still tilted - check if it's been tilted long enough and at a large angle
+        if (tiltAngle > MPU_CUT_ANGLE_THRESHOLD && 
+            (currentTime - tiltStartTime) > MPU_CUT_TIME_THRESHOLD) {
+          // Tree has been tilted at a large angle for a sustained period - likely cut
+          cutDetected = true;
+        }
+      }
+    } else {
+      // Not tilted - reset tilt tracking
+      wasTilted = false;
+      tiltStartTime = 0;
+    }
+    
+    // Check for abrupt cut (sudden change in acceleration - tree falling)
     if (lastPacketTime > 0) {
       float accelChange = sqrt(
         pow(accelX - lastAccel[0], 2) +
@@ -284,7 +355,21 @@ void loop() {
         pow(accelZ - lastAccel[2], 2)
       );
       
-      if (accelChange > MPU_CUT_THRESHOLD) {
+      // Also check for sudden large tilt angle change
+      float lastTiltAngle = 0;
+      float lastAccelMagnitude = sqrt(lastAccel[0]*lastAccel[0] + lastAccel[1]*lastAccel[1] + lastAccel[2]*lastAccel[2]);
+      if (lastAccelMagnitude > 0.1) {
+        float lastNormalizedZ = lastAccel[2] / lastAccelMagnitude;
+        if (lastNormalizedZ > 1.0) lastNormalizedZ = 1.0;
+        if (lastNormalizedZ < -1.0) lastNormalizedZ = -1.0;
+        lastTiltAngle = acos(-lastNormalizedZ) * (180.0 / PI);
+      }
+      float tiltAngleChange = abs(tiltAngle - lastTiltAngle);
+      
+      // Detect cut if:
+      // 1. Sudden large acceleration change (tree falling), OR
+      // 2. Sudden large tilt angle change (tree toppling)
+      if (accelChange > MPU_CUT_THRESHOLD || tiltAngleChange > 30.0) {
         cutDetected = true;
       }
     }
@@ -424,41 +509,57 @@ String buildPayload(float temp, float humidity, int mq2Value,
                    float gyroX, float gyroY, float gyroZ,
                    bool tilt, bool cut, bool alert) {
   // Build ultra-compact JSON payload (must fit in 32 bytes for nRF24L01)
-  // Format: {t:1,T:25,H:50,M:120,A:0,C:123} - without quotes, integer values (no decimals)
-  // Removed timestamp and decimals to save space - backend will add timestamp
+  // Format: {t:1,T:25,H:50,M:120,x:5,y:8,z:-10,u:25,v:26,w:20,L:0,c:0,A:0,C:123}
+  // MPU data: Single letter fields, values scaled by 10, flags as 0/1
   
-  // Build compact JSON without quotes (saves ~14 bytes)
+  // Build ultra-compact JSON without quotes - minimal separators
   String json = "{";
-  json += "t:" + String(TREE_ID) + ",";  // tree_id -> t (2-3 bytes)
+  json += "t" + String(TREE_ID);  // tree_id -> t (2 bytes, no colon/comma)
   
-  // Temperature as integer (or null indicator) - saves 2 bytes vs decimal
+  // Temperature as integer (or null indicator) - ultra-compact
   if (isnan(temp) || isinf(temp)) {
-    json += "T:n,";  // null indicator for temperature
+    json += "Tn";  // null indicator (2 bytes)
   } else {
-    // Clamp and convert to integer (round to nearest)
     if (temp < -40) temp = -40;
     if (temp > 80) temp = 80;
-    int tempInt = (int)(temp + 0.5);  // Round to nearest integer
-    json += "T:" + String(tempInt) + ",";  // temp_c -> T (3-5 bytes as integer)
+    int tempInt = (int)(temp + 0.5);
+    json += "T" + String(tempInt);  // T23 = 3 bytes (saves 2 bytes)
   }
   
-  // Humidity as integer (or null indicator) - saves 2 bytes vs decimal
+  // Humidity as integer (or null indicator) - ultra-compact
   if (isnan(humidity) || isinf(humidity)) {
-    json += "H:n,";  // null indicator for humidity
+    json += "Hn";  // null indicator (2 bytes)
   } else {
-    // Clamp and convert to integer (round to nearest)
     if (humidity < 0) humidity = 0;
     if (humidity > 100) humidity = 100;
-    int humidityInt = (int)(humidity + 0.5);  // Round to nearest integer
-    json += "H:" + String(humidityInt) + ",";  // humidity_pct -> H (3-5 bytes as integer)
+    int humidityInt = (int)(humidity + 0.5);
+    json += "H" + String(humidityInt);  // H44 = 3 bytes (saves 2 bytes)
   }
   
-  json += "M:" + String(mq2Value) + ",";  // mq2 -> M (3-5 bytes)
-  json += "A:" + String(alert ? 1 : 0);  // alert status -> A (2 bytes)
+  json += "M" + String(mq2Value);  // M51 = 3 bytes (saves 2 bytes)
   
-  // Calculate CRC8 (simpler than CRC16, saves 2-3 bytes)
+  // MPU6050 data: ALWAYS send for real-time visualization (ultra-compact format)
+  // Format: PHHLL (2 hex bytes for accel x,y + 2 flags) - z not needed (can be calculated)
+  // Only send x,y accelerometer - z can be inferred from magnitude, saves 2 bytes
+  // Scale: accel ±2g -> ±20 (scale by 10), offset +100 -> 0-200 range -> fits in 1 hex byte
+  int ax = (int)(accelX * 10) + 100;
+  int ay = (int)(accelY * 10) + 100;
+  // Clamp to 0-255 for hex encoding
+  if (ax < 0) ax = 0; if (ax > 255) ax = 255;
+  if (ay < 0) ay = 0; if (ay > 255) ay = 255;
+  
+  // Build ultra-compact hex string: P + 4 hex chars (2 bytes) + 2 flags = 6 chars
+  char hexStr[7];
+  sprintf(hexStr, "P%02X%02X%01d%01d", ax, ay, tilt ? 1 : 0, cut ? 1 : 0);
+  json += String(hexStr);  // 7 bytes (P + 6 chars, no comma) - saves 1 byte
+  
+  json += "A" + String(alert ? 1 : 0);  // A0 = 2 bytes (saves 1 byte)
+  
+  // Calculate CRC8 and encode as 2-digit hex
   uint8_t crc = calculateCRC8(json);
-  json += ",C:" + String(crc);  // crc -> C (3-5 bytes)
+  char crcHex[3];
+  sprintf(crcHex, "%02X", crc);
+  json += "C" + String(crcHex);  // CAB = 3 bytes (no comma/colon, saves 1 byte)
   json += "}";
   
   // Debug: Print payload size
@@ -467,11 +568,11 @@ String buildPayload(float temp, float humidity, int mq2Value,
   Serial.print(" bytes: ");
   Serial.println(json);
   
-  // Verify payload size
+  // Verify payload size (nRF24L01 limit is 32 bytes)
   if (json.length() > 32) {
-    Serial.print("ERROR: Payload too large! ");
+    Serial.print("⚠ WARNING: Payload size ");
     Serial.print(json.length());
-    Serial.println(" bytes");
+    Serial.println(" bytes exceeds 32-byte limit!");
     Serial.print("Payload: ");
     Serial.println(json);
   }

@@ -17,7 +17,7 @@ import TreeAI from '@/components/TreeAI'
 
 const translations = {
   agency: "O'rmon va yashil hududlarni ko'paytirish, cho'llanishga qarshi kurashish agentligining Daraxt monitoring tizimi",
-  title: "Boshqaruv paneli",
+  title: "O'rmon agentligi",
   trees: "Daraxtlar",
   alerts: "Ogohlantirishlar",
   logout: "Chiqish",

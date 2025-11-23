@@ -206,7 +206,16 @@ router.post('/', async (req, res) => {
         humidity_pct: (humidityValue === null || humidityValue === 0) ? null : humidityValue,  // Can be null
         mq2: mq2Value || 0,
         status: finalStatus, // Use finalStatus (includes PPM threshold check)
-        ppm_threshold: ppmThreshold // Include threshold in telemetry data for frontend
+        ppm_threshold: ppmThreshold, // Include threshold in telemetry data for frontend
+        // MPU6050 data for 3D visualization
+        mpu_accel_x: mpu_accel_x || 0,
+        mpu_accel_y: mpu_accel_y || 0,
+        mpu_accel_z: mpu_accel_z || 0,
+        mpu_gyro_x: mpu_gyro_x || 0,
+        mpu_gyro_y: mpu_gyro_y || 0,
+        mpu_gyro_z: mpu_gyro_z || 0,
+        mpu_tilt: mpu_tilt || false,
+        mpu_cut_detected: mpu_cut_detected || false
       };
       console.log('Emitting telemetry via Socket.IO:', telemetryData); // Debug log
       io.emit('telemetry', telemetryData);

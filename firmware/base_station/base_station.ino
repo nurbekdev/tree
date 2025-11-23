@@ -76,6 +76,21 @@ int bufferHead = 0;
 int bufferTail = 0;
 int bufferCount = 0;
 
+// ==================== FUNCTION DECLARATIONS ====================
+// Forward declarations to avoid compilation errors
+int extractTreeId(String payload);
+void processPacket(String rawPayload, int treeIndex);
+String buildBackendPayload(DynamicJsonDocument& doc, int treeId, float temp, float humidity, int mq2, String status,
+                            float mpu_accel_x, float mpu_accel_y, float mpu_accel_z,
+                            float mpu_gyro_x, float mpu_gyro_y, float mpu_gyro_z,
+                            bool mpu_tilt, bool mpu_cut_detected);
+uint8_t calculateCRC8(String data);
+bool sendToBackend(String payload);
+void bufferMessage(String payload);
+void processMessageBuffer();
+void printTreeStatus();
+void updateLEDs();
+
 // ==================== SETUP ====================
 void setup() {
   Serial.begin(115200);
@@ -230,22 +245,41 @@ void loop() {
       Serial.println(payload);
       Serial.println("Trying manual extraction...");
       
-      // Try manual extraction as fallback
-      int tPos = payload.indexOf("t:");
+      // Try manual extraction as fallback - new format first: t2
+      int tPos = payload.indexOf("{t");
       if (tPos != -1) {
-        int tEnd = payload.indexOf(',', tPos);
+        tPos += 2;  // Skip "{t"
+        int tEnd = payload.indexOf('T', tPos);
+        if (tEnd == -1) tEnd = payload.indexOf('H', tPos);
+        if (tEnd == -1) tEnd = payload.indexOf('M', tPos);
+        if (tEnd == -1) tEnd = payload.indexOf('P', tPos);
+        if (tEnd == -1) tEnd = payload.indexOf('A', tPos);
+        if (tEnd == -1) tEnd = payload.indexOf('C', tPos);
         if (tEnd == -1) tEnd = payload.indexOf('}', tPos);
         if (tEnd > tPos) {
-          String treeIdStr = payload.substring(tPos + 2, tEnd);
+          String treeIdStr = payload.substring(tPos, tEnd);
           treeId = treeIdStr.toInt();
-          Serial.print("Manual extraction result: ");
+          Serial.print("Manual extraction result (new format): ");
           Serial.println(treeId);
-          
-          if (treeId >= 1 && treeId <= 3) {
-            int treeIndex = treeId - 1;
-            processPacket(payload, treeIndex);
+        }
+      } else {
+        // Try old format: t:2
+        tPos = payload.indexOf("t:");
+        if (tPos != -1) {
+          int tEnd = payload.indexOf(',', tPos);
+          if (tEnd == -1) tEnd = payload.indexOf('}', tPos);
+          if (tEnd > tPos) {
+            String treeIdStr = payload.substring(tPos + 2, tEnd);
+            treeId = treeIdStr.toInt();
+            Serial.print("Manual extraction result (old format): ");
+            Serial.println(treeId);
           }
         }
+      }
+      
+      if (treeId >= 1 && treeId <= 3) {
+        int treeIndex = treeId - 1;
+        processPacket(payload, treeIndex);
       }
     }
   }
@@ -270,8 +304,31 @@ void loop() {
 // ==================== HELPER FUNCTIONS ====================
 int extractTreeId(String payload) {
   // Extract tree_id from compact JSON format
-  // Try compact format first (without quotes): t:ID
-  int startIdx = payload.indexOf("t:");
+  // Try new ultra-compact format first (without colon): tID
+  int startIdx = payload.indexOf("{t");
+  if (startIdx != -1) {
+    startIdx += 2;  // Length of "{t"
+    // Find end - next field (T, H, M, P, A, C) or }
+    int endIdx = payload.indexOf('T', startIdx);
+    if (endIdx == -1) endIdx = payload.indexOf('H', startIdx);
+    if (endIdx == -1) endIdx = payload.indexOf('M', startIdx);
+    if (endIdx == -1) endIdx = payload.indexOf('P', startIdx);
+    if (endIdx == -1) endIdx = payload.indexOf('A', startIdx);
+    if (endIdx == -1) endIdx = payload.indexOf('C', startIdx);
+    if (endIdx == -1) endIdx = payload.indexOf('}', startIdx);
+    
+    if (endIdx > startIdx) {
+      String treeIdStr = payload.substring(startIdx, endIdx);
+      treeIdStr.trim();
+      int treeId = treeIdStr.toInt();
+      if (treeId > 0 && treeId <= 3) {
+        return treeId;
+      }
+    }
+  }
+  
+  // Try old compact format (with colon): t:ID
+  startIdx = payload.indexOf("t:");
   if (startIdx != -1) {
     startIdx += 2;  // Length of "t:"
     int endIdx = payload.indexOf(',', startIdx);
@@ -364,15 +421,52 @@ void processPacket(String rawPayload, int treeIndex) {
   uint8_t receivedCRC = 0;
   String jsonWithoutCRC = "";
   
-  // Try compact format first (without quotes): C:123
-  int crcPos = rawPayload.lastIndexOf(",C:");
-  if (crcPos > 0) {
-    // Extract CRC value
-    int crcEnd = rawPayload.indexOf('}', crcPos);
-    if (crcEnd > crcPos) {
-      String crcStr = rawPayload.substring(crcPos + 3, crcEnd);
-      receivedCRC = crcStr.toInt();
-      jsonWithoutCRC = rawPayload.substring(0, crcPos);
+  // Try new ultra-compact format first: CAB (no comma, no colon, 2 hex chars)
+  int crcPos = rawPayload.lastIndexOf("C");
+  if (crcPos > 0 && crcPos + 2 < rawPayload.length()) {
+    // Check if it's at the end (before }) and has 2 hex chars
+    if (rawPayload.charAt(crcPos + 1) != ':' && rawPayload.charAt(crcPos - 1) != ',') {
+      // New format: CAB (2 hex chars directly after C, no comma/colon)
+      int crcEnd = rawPayload.indexOf('}', crcPos);
+      if (crcEnd > crcPos && crcEnd >= crcPos + 3) {
+        String crcStr = rawPayload.substring(crcPos + 1, crcEnd);
+        if (crcStr.length() >= 2) {
+          receivedCRC = strtol(crcStr.c_str(), NULL, 16);  // Parse as hex
+          jsonWithoutCRC = rawPayload.substring(0, crcPos);
+        }
+      }
+    } else if (rawPayload.charAt(crcPos + 1) == ':') {
+      // Old format with colon: ,C:AB or C:AB
+      int crcEnd = rawPayload.indexOf('}', crcPos);
+      if (crcEnd > crcPos) {
+        String crcStr = rawPayload.substring(crcPos + 2, crcEnd);
+        receivedCRC = strtol(crcStr.c_str(), NULL, 16);  // Parse as hex
+        jsonWithoutCRC = rawPayload.substring(0, crcPos);
+      }
+    } else if (rawPayload.charAt(crcPos - 1) == ',') {
+      // Old format with comma: ,CAB
+      int crcEnd = rawPayload.indexOf('}', crcPos);
+      if (crcEnd > crcPos && crcEnd >= crcPos + 3) {
+        String crcStr = rawPayload.substring(crcPos + 1, crcEnd);
+        receivedCRC = strtol(crcStr.c_str(), NULL, 16);  // Parse as hex
+        jsonWithoutCRC = rawPayload.substring(0, crcPos - 1);  // Remove comma too
+      }
+    }
+  }
+  
+  // Try old format with comma and colon: ,C:AB (if not found above)
+  if (crcPos <= 0 || jsonWithoutCRC.length() == 0) {
+    crcPos = rawPayload.lastIndexOf(",C:");
+    if (crcPos > 0) {
+      int crcEnd = rawPayload.indexOf('}', crcPos);
+      if (crcEnd > crcPos) {
+        String crcStr = rawPayload.substring(crcPos + 3, crcEnd);
+        receivedCRC = strtol(crcStr.c_str(), NULL, 16);  // Try hex first
+        if (receivedCRC == 0 && crcStr.length() > 0 && crcStr.charAt(0) != '0') {
+          receivedCRC = crcStr.toInt();  // Fallback to decimal
+        }
+        jsonWithoutCRC = rawPayload.substring(0, crcPos);
+      }
     }
   }
   
@@ -433,16 +527,37 @@ void processPacket(String rawPayload, int treeIndex) {
       treeId = doc["tree_id"].as<int>();
     } else {
       // Manual parsing for compact format (without quotes)
-      int tPos = rawPayload.indexOf("t:");
+      // Try new format first: t2 (no colon)
+      int tPos = rawPayload.indexOf("{t");
       if (tPos != -1) {
-        int tEnd = rawPayload.indexOf(',', tPos);
+        tPos += 2;  // Skip "{t"
+        int tEnd = rawPayload.indexOf('T', tPos);
+        if (tEnd == -1) tEnd = rawPayload.indexOf('H', tPos);
+        if (tEnd == -1) tEnd = rawPayload.indexOf('M', tPos);
+        if (tEnd == -1) tEnd = rawPayload.indexOf('P', tPos);
+        if (tEnd == -1) tEnd = rawPayload.indexOf('A', tPos);
+        if (tEnd == -1) tEnd = rawPayload.indexOf('C', tPos);
         if (tEnd == -1) tEnd = rawPayload.indexOf('}', tPos);
         if (tEnd > tPos) {
-          String treeIdStr = rawPayload.substring(tPos + 2, tEnd);
+          String treeIdStr = rawPayload.substring(tPos, tEnd);
           treeIdStr.trim();
           treeId = treeIdStr.toInt();
-          Serial.print("Manual parsing result: ");
+          Serial.print("Manual parsing result (new format): ");
           Serial.println(treeId);
+        }
+      } else {
+        // Try old format: t:2
+        tPos = rawPayload.indexOf("t:");
+        if (tPos != -1) {
+          int tEnd = rawPayload.indexOf(',', tPos);
+          if (tEnd == -1) tEnd = rawPayload.indexOf('}', tPos);
+          if (tEnd > tPos) {
+            String treeIdStr = rawPayload.substring(tPos + 2, tEnd);
+            treeIdStr.trim();
+            treeId = treeIdStr.toInt();
+            Serial.print("Manual parsing result (old format): ");
+            Serial.println(treeId);
+          }
         }
       }
     }
@@ -463,13 +578,23 @@ void processPacket(String rawPayload, int treeIndex) {
   float temp = NAN;  // Use NAN for null/missing values
   
   // ALWAYS use manual parsing first for compact format (more reliable)
-  // JSON parsing may fail or incorrectly parse "n" as 0.0
+  // Support both formats: T:23 (old) and T23 (new ultra-compact)
   int tPos = rawPayload.indexOf("T:");
+  if (tPos == -1) tPos = rawPayload.indexOf("T");  // Try new format without colon
   if (tPos != -1) {
-    int tEnd = rawPayload.indexOf(',', tPos);
-    if (tEnd == -1) tEnd = rawPayload.indexOf('}', tPos);
+    int startOffset = (rawPayload.charAt(tPos + 1) == ':') ? 2 : 1;  // Skip T: or T
+    int tEnd = rawPayload.indexOf(',', tPos + startOffset);
+    if (tEnd == -1) {
+      // Try finding next field (H, M, P, A, C) or end
+      tEnd = rawPayload.indexOf('H', tPos + startOffset);
+      if (tEnd == -1) tEnd = rawPayload.indexOf('M', tPos + startOffset);
+      if (tEnd == -1) tEnd = rawPayload.indexOf('P', tPos + startOffset);
+      if (tEnd == -1) tEnd = rawPayload.indexOf('A', tPos + startOffset);
+      if (tEnd == -1) tEnd = rawPayload.indexOf('C', tPos + startOffset);
+      if (tEnd == -1) tEnd = rawPayload.indexOf('}', tPos);
+    }
     if (tEnd > tPos) {
-      String tempStr = rawPayload.substring(tPos + 2, tEnd);
+      String tempStr = rawPayload.substring(tPos + startOffset, tEnd);
       tempStr.trim();  // Remove whitespace
       Serial.print("DEBUG: Extracted tempStr from rawPayload: '");
       Serial.print(tempStr);
@@ -516,13 +641,22 @@ void processPacket(String rawPayload, int treeIndex) {
   float humidity = NAN;  // Use NAN for null/missing values
   
   // ALWAYS use manual parsing first for compact format (more reliable)
-  // JSON parsing may fail or incorrectly parse "n" as 0.0
+  // Support both formats: H:44 (old) and H44 (new ultra-compact)
   int hPos = rawPayload.indexOf("H:");
+  if (hPos == -1) hPos = rawPayload.indexOf("H");  // Try new format without colon
   if (hPos != -1) {
-    int hEnd = rawPayload.indexOf(',', hPos);
-    if (hEnd == -1) hEnd = rawPayload.indexOf('}', hPos);
+    int startOffset = (rawPayload.charAt(hPos + 1) == ':') ? 2 : 1;  // Skip H: or H
+    int hEnd = rawPayload.indexOf(',', hPos + startOffset);
+    if (hEnd == -1) {
+      // Try finding next field (M, P, A, C) or end
+      hEnd = rawPayload.indexOf('M', hPos + startOffset);
+      if (hEnd == -1) hEnd = rawPayload.indexOf('P', hPos + startOffset);
+      if (hEnd == -1) hEnd = rawPayload.indexOf('A', hPos + startOffset);
+      if (hEnd == -1) hEnd = rawPayload.indexOf('C', hPos + startOffset);
+      if (hEnd == -1) hEnd = rawPayload.indexOf('}', hPos);
+    }
     if (hEnd > hPos) {
-      String humStr = rawPayload.substring(hPos + 2, hEnd);
+      String humStr = rawPayload.substring(hPos + startOffset, hEnd);
       humStr.trim();  // Remove whitespace
       Serial.print("DEBUG: Extracted humStr from rawPayload: '");
       Serial.print(humStr);
@@ -565,7 +699,7 @@ void processPacket(String rawPayload, int treeIndex) {
     Serial.println(humidity);
   }
   
-  // Extract MQ2 value
+  // Extract MQ2 value - support both formats: M:51 (old) and M51 (new)
   int mq2 = 0;
   if (doc.containsKey("M")) {
     mq2 = doc["M"].as<int>();
@@ -574,27 +708,43 @@ void processPacket(String rawPayload, int treeIndex) {
   } else {
     // Manual parsing for compact format
     int mPos = rawPayload.indexOf("M:");
+    if (mPos == -1) mPos = rawPayload.indexOf("M");  // Try new format
     if (mPos != -1) {
-      int mEnd = rawPayload.indexOf(',', mPos);
-      if (mEnd == -1) mEnd = rawPayload.indexOf('}', mPos);
+      int startOffset = (rawPayload.charAt(mPos + 1) == ':') ? 2 : 1;
+      int mEnd = rawPayload.indexOf(',', mPos + startOffset);
+      if (mEnd == -1) {
+        mEnd = rawPayload.indexOf('P', mPos + startOffset);
+        if (mEnd == -1) mEnd = rawPayload.indexOf('A', mPos + startOffset);
+        if (mEnd == -1) mEnd = rawPayload.indexOf('C', mPos + startOffset);
+        if (mEnd == -1) mEnd = rawPayload.indexOf('}', mPos);
+      }
       if (mEnd > mPos) {
-        mq2 = rawPayload.substring(mPos + 2, mEnd).toInt();
+        mq2 = rawPayload.substring(mPos + startOffset, mEnd).toInt();
       }
     }
   }
   
-  // Extract alert flag
+  // Extract alert flag - support both formats: A:0 (old) and A0 (new)
   bool alertFlag = false;
   if (doc.containsKey("A")) {
     alertFlag = (doc["A"].as<int>() == 1);
   } else {
     // Try parsing manually for compact format
     int aPos = rawPayload.indexOf("A:");
+    if (aPos == -1) aPos = rawPayload.indexOf("A");  // Try new format
     if (aPos != -1) {
-      int aEnd = rawPayload.indexOf(',', aPos);
-      if (aEnd == -1) aEnd = rawPayload.indexOf('}', aPos);
-      if (aEnd > aPos) {
-        alertFlag = (rawPayload.substring(aPos + 2, aEnd).toInt() == 1);
+      int startOffset = (rawPayload.charAt(aPos + 1) == ':') ? 2 : 1;
+      int aEnd = rawPayload.indexOf(',', aPos + startOffset);
+      if (aEnd == -1) {
+        aEnd = rawPayload.indexOf('C', aPos + startOffset);
+        if (aEnd == -1) aEnd = rawPayload.indexOf('}', aPos);
+      }
+      if (aEnd > aPos && aEnd > aPos + startOffset) {
+        String aStr = rawPayload.substring(aPos + startOffset, aEnd);
+        alertFlag = (aStr.toInt() == 1);
+      } else if (aEnd == aPos + startOffset + 1) {
+        // Single digit directly after A
+        alertFlag = (rawPayload.charAt(aPos + startOffset) == '1');
       }
     }
   }
@@ -625,6 +775,75 @@ void processPacket(String rawPayload, int treeIndex) {
   Serial.print(", status=");
   Serial.println(status);
   
+  // Extract MPU6050 data from raw payload (new ultra-compact format: P646400)
+  // Format: P + 4 hex chars (ax,ay) + 2 flags (tilt,cut) = 7 chars total
+  float mpu_accel_x = 0, mpu_accel_y = 0, mpu_accel_z = 0;
+  float mpu_gyro_x = 0, mpu_gyro_y = 0, mpu_gyro_z = 0;
+  bool mpu_tilt = false, mpu_cut_detected = false;
+  
+  // Find P field in raw payload (new format: P646400, no colon, no comma)
+  int pPos = rawPayload.indexOf("P");
+  if (pPos != -1) {
+    // Check if it's the new ultra-compact format (P + 4 hex + 2 flags = 6 chars after P)
+    // Format: P646400 (P + 4 hex chars + 2 flags)
+    int pStart = pPos + 1;  // Skip 'P'
+    int pEnd = rawPayload.indexOf('A', pPos);  // Find next field (A for alert)
+    if (pEnd == -1) pEnd = rawPayload.indexOf('C', pPos);  // Or C for CRC
+    if (pEnd == -1) pEnd = rawPayload.indexOf('}', pPos);  // Or end
+    
+    if (pEnd > pStart && pEnd >= pStart + 6) {
+      String pData = rawPayload.substring(pStart, pEnd);
+      Serial.print("DEBUG: Found P field: '");
+      Serial.print(pData);
+      Serial.println("'");
+      
+      // Check if it's the new format (6 chars: 4 hex + 2 flags)
+      if (pData.length() >= 6) {
+        // Parse 4 hex chars for accel X and Y
+        String axHex = pData.substring(0, 2);
+        String ayHex = pData.substring(2, 4);
+        
+        int ax_scaled = strtol(axHex.c_str(), NULL, 16);
+        int ay_scaled = strtol(ayHex.c_str(), NULL, 16);
+        
+        // Convert back: (scaled - 100) / 10.0
+        mpu_accel_x = (ax_scaled - 100) / 10.0;
+        mpu_accel_y = (ay_scaled - 100) / 10.0;
+        
+        // Calculate accelZ from magnitude (assuming 1g magnitude when vertical)
+        float currentMagnitudeSq = mpu_accel_x * mpu_accel_x + mpu_accel_y * mpu_accel_y;
+        if (currentMagnitudeSq < 1.0) {
+          mpu_accel_z = -sqrt(1.0 - currentMagnitudeSq);  // Assume Z is negative (down)
+        } else {
+          mpu_accel_z = 0;  // Fallback
+        }
+        
+        // Parse flags (positions 4 and 5)
+        if (pData.length() >= 5) {
+          mpu_tilt = (pData.charAt(4) == '1');
+        }
+        if (pData.length() >= 6) {
+          mpu_cut_detected = (pData.charAt(5) == '1');
+        }
+        
+        Serial.print("DEBUG: Parsed MPU - accelX=");
+        Serial.print(mpu_accel_x, 2);
+        Serial.print(", accelY=");
+        Serial.print(mpu_accel_y, 2);
+        Serial.print(", accelZ=");
+        Serial.print(mpu_accel_z, 2);
+        Serial.print(", tilt=");
+        Serial.print(mpu_tilt);
+        Serial.print(", cut=");
+        Serial.println(mpu_cut_detected);
+      }
+    } else {
+      Serial.println("DEBUG: P field found but format incorrect or too short");
+    }
+  } else {
+    Serial.println("DEBUG: P field not found in payload");
+  }
+  
   // Update tree state
   bool isNewConnection = !treeStates[treeIndex].hasData;
   treeStates[treeIndex].hasData = true;
@@ -644,8 +863,11 @@ void processPacket(String rawPayload, int treeIndex) {
   printTreeStatus();
   
   // Build full telemetry payload for backend
-  // Pass extracted values to buildBackendPayload
-  String backendPayload = buildBackendPayload(doc, treeId, temp, humidity, mq2, status);
+  // Pass extracted values including MPU6050 data to buildBackendPayload
+  String backendPayload = buildBackendPayload(doc, treeId, temp, humidity, mq2, status,
+                                              mpu_accel_x, mpu_accel_y, mpu_accel_z,
+                                              mpu_gyro_x, mpu_gyro_y, mpu_gyro_z,
+                                              mpu_tilt, mpu_cut_detected);
   
   Serial.print("Backend payload: ");
   Serial.println(backendPayload);
@@ -660,7 +882,10 @@ void processPacket(String rawPayload, int treeIndex) {
   }
 }
 
-String buildBackendPayload(DynamicJsonDocument& doc, int treeId, float temp, float humidity, int mq2, String status) {
+String buildBackendPayload(DynamicJsonDocument& doc, int treeId, float temp, float humidity, int mq2, String status,
+                            float mpu_accel_x, float mpu_accel_y, float mpu_accel_z,
+                            float mpu_gyro_x, float mpu_gyro_y, float mpu_gyro_z,
+                            bool mpu_tilt, bool mpu_cut_detected) {
   // Create a complete JSON payload for backend
   // All values are already extracted and passed as parameters
   
@@ -719,23 +944,18 @@ String buildBackendPayload(DynamicJsonDocument& doc, int treeId, float temp, flo
   
   payload += "\"mq2\":" + String(mq2) + ",";
   
-  // MPU data (if available in old format, otherwise use defaults)
-  if (doc.containsKey("mpu")) {
-    JsonObject mpu = doc["mpu"];
-    payload += "\"mpu_accel_x\":" + String(mpu["accel"]["x"].as<float>()) + ",";
-    payload += "\"mpu_accel_y\":" + String(mpu["accel"]["y"].as<float>()) + ",";
-    payload += "\"mpu_accel_z\":" + String(mpu["accel"]["z"].as<float>()) + ",";
-    payload += "\"mpu_gyro_x\":" + String(mpu["gyro"]["x"].as<float>()) + ",";
-    payload += "\"mpu_gyro_y\":" + String(mpu["gyro"]["y"].as<float>()) + ",";
-    payload += "\"mpu_gyro_z\":" + String(mpu["gyro"]["z"].as<float>()) + ",";
-    payload += "\"mpu_tilt\":" + String(mpu["tilt"].as<bool>() ? "true" : "false") + ",";
-    payload += "\"mpu_cut_detected\":" + String(mpu["cut_detected"].as<bool>() ? "true" : "false") + ",";
-  } else {
-    // Default MPU values if not in compact format
-    payload += "\"mpu_accel_x\":0,\"mpu_accel_y\":0,\"mpu_accel_z\":0,";
-    payload += "\"mpu_gyro_x\":0,\"mpu_gyro_y\":0,\"mpu_gyro_z\":0,";
-    payload += "\"mpu_tilt\":false,\"mpu_cut_detected\":false,";
-  }
+  // MPU6050 data - use values passed as parameters (already parsed in processPacket)
+  // No need to parse again, just use the parameters directly
+  
+  // Add MPU data to backend payload
+  payload += "\"mpu_accel_x\":" + String(mpu_accel_x, 2) + ",";
+  payload += "\"mpu_accel_y\":" + String(mpu_accel_y, 2) + ",";
+  payload += "\"mpu_accel_z\":" + String(mpu_accel_z, 2) + ",";
+  payload += "\"mpu_gyro_x\":" + String(mpu_gyro_x, 2) + ",";
+  payload += "\"mpu_gyro_y\":" + String(mpu_gyro_y, 2) + ",";
+  payload += "\"mpu_gyro_z\":" + String(mpu_gyro_z, 2) + ",";
+  payload += "\"mpu_tilt\":" + String(mpu_tilt ? "true" : "false") + ",";
+  payload += "\"mpu_cut_detected\":" + String(mpu_cut_detected ? "true" : "false") + ",";
   
   payload += "\"status\":\"" + status + "\"";
   payload += "}";

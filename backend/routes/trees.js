@@ -20,11 +20,22 @@ router.get('/', async (req, res) => {
           'humidity_pct', tel.humidity_pct,
           'mq2', tel.mq2,
           'status', tel.status,
-          'timestamp', tel.timestamp
+          'timestamp', tel.timestamp,
+          'mpu_accel_x', tel.mpu_accel_x,
+          'mpu_accel_y', tel.mpu_accel_y,
+          'mpu_accel_z', tel.mpu_accel_z,
+          'mpu_gyro_x', tel.mpu_gyro_x,
+          'mpu_gyro_y', tel.mpu_gyro_y,
+          'mpu_gyro_z', tel.mpu_gyro_z,
+          'mpu_tilt', tel.mpu_tilt,
+          'mpu_cut_detected', tel.mpu_cut_detected
         ) as last_telemetry
        FROM trees t
        LEFT JOIN LATERAL (
-         SELECT temp_c, humidity_pct, mq2, status, timestamp
+         SELECT temp_c, humidity_pct, mq2, status, timestamp,
+                mpu_accel_x, mpu_accel_y, mpu_accel_z,
+                mpu_gyro_x, mpu_gyro_y, mpu_gyro_z,
+                mpu_tilt, mpu_cut_detected
          FROM telemetry
          WHERE telemetry.tree_id = t.tree_id
          ORDER BY timestamp DESC

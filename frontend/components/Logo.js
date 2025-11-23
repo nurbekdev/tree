@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import Image from 'next/image'
 
-export default function Logo({ size = 60 }) {
+export default function Logo({ size = 60, className = '' }) {
   const [imageError, setImageError] = useState(false)
 
   if (imageError) {
     // SVG Fallback
     return (
-      <div className="flex items-center" style={{ width: size, height: size }}>
+      <div className={`flex items-center ${className}`} style={{ width: size, height: size }}>
         <svg width={size} height={size} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -52,7 +52,7 @@ export default function Logo({ size = 60 }) {
   }
 
   return (
-    <div className="flex items-center" style={{ width: size, height: size }}>
+    <div className={`flex items-center ${className}`} style={{ width: size, height: size }}>
       <Image
         src="/22.png"
         alt="Logo"
