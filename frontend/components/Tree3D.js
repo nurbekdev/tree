@@ -326,9 +326,9 @@ export default function Tree3D({
   isTilt = false 
 }) {
   return (
-    <div className="relative w-full h-48 bg-gradient-to-b from-sky-50 to-blue-100 rounded-lg overflow-hidden border-2 border-blue-200 shadow-md">
+    <div className="relative w-full h-full bg-gradient-to-b from-sky-50 to-blue-100 rounded-lg overflow-hidden border-2 border-blue-200 shadow-md">
       <Canvas
-        camera={{ position: [1.8, 1.5, 1.8], fov: 50 }}
+        camera={{ position: [2.2, 2.0, 2.2], fov: 55 }}
         shadows
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       >

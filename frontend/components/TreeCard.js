@@ -1,6 +1,8 @@
 'use client'
 
 import { format } from 'date-fns'
+import { FiShare2 } from 'react-icons/fi'
+import toast from 'react-hot-toast'
 
 const translations = {
   treeId: "Daraxt ID",
@@ -11,9 +13,45 @@ const translations = {
   viewDetails: "Batafsil",
   noData: "Ma'lumot yo'q",
   offline: "Offline",
+  share: "Ulashish",
+  linkCopied: "Link nusxa olindi!",
 }
 
 export default function TreeCard({ tree, onClick, ppmThreshold = 400 }) {
+  const handleShare = (e) => {
+    e.stopPropagation() // Prevent triggering the card click
+    
+    const shareUrl = `${window.location.origin}/tree/${tree.tree_id}`
+    
+    // Copy to clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast.success(translations.linkCopied)
+      }).catch(() => {
+        // Fallback for older browsers
+        fallbackCopyToClipboard(shareUrl)
+      })
+    } else {
+      // Fallback for older browsers
+      fallbackCopyToClipboard(shareUrl)
+    }
+  }
+  
+  const fallbackCopyToClipboard = (text) => {
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    textArea.style.position = 'fixed'
+    textArea.style.left = '-999999px'
+    document.body.appendChild(textArea)
+    textArea.select()
+    try {
+      document.execCommand('copy')
+      toast.success(translations.linkCopied)
+    } catch (err) {
+      toast.error('Link nusxa olishda xatolik')
+    }
+    document.body.removeChild(textArea)
+  }
   // Check if tree is offline (no data in last 30 seconds)
   // If data is 5-10 seconds old, still show it (grace period)
   // After 30 seconds, mark as offline
@@ -149,6 +187,13 @@ export default function TreeCard({ tree, onClick, ppmThreshold = 400 }) {
           {isOffline && (
             <span className="text-xs text-gray-600 font-medium bg-gray-200 px-2 py-1 rounded-full">⚫ {translations.offline}</span>
           )}
+          <button
+            onClick={handleShare}
+            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center justify-center"
+            title={translations.share}
+          >
+            <FiShare2 className="w-4 h-4" />
+          </button>
           <div 
             className={`w-3 h-3 rounded-full ${statusColor} ${
               isOffline ? '' : (isPpmAlert ? 'animate-pulse' : isAlert ? 'animate-pulse' : 'animate-pulse')
