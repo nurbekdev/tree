@@ -831,17 +831,17 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
               ) : null}
 
               {/* 3D Tree Visualization - Show always (online or offline with historical data) */}
-              <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-sm">
-                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
-                  <span className="text-lg">🌳</span>
-                  3D Daraxt Ko'rinishi
+                <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-sm">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
+                    <span className="text-lg">🌳</span>
+                    3D Daraxt Ko'rinishi
                   {isOffline && (
                     <span className="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                       📊 Tarixiy ma'lumot
                     </span>
                   )}
-                </h3>
-                <Tree3D
+                  </h3>
+                  <Tree3D
                   accelX={mpu6050Data.accelX}
                   accelY={mpu6050Data.accelY}
                   accelZ={mpu6050Data.accelZ}
@@ -859,11 +859,11 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                   </p>
                 )}
                 {!isOffline && !currentTelemetry && (
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    MPU6050 ma'lumotlari kutilmoqda...
-                  </p>
-                )}
-              </div>
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      MPU6050 ma'lumotlari kutilmoqda...
+                    </p>
+                  )}
+                </div>
 
               {/* Metadata Section */}
               <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-sm">

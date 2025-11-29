@@ -32,32 +32,32 @@ function Tree3DModel({ accelX, accelY, accelZ, gyroX, gyroY, gyroZ, isCut, isTil
     if (hasRealData) {
       // Use REAL MPU6050 data for movement
       // Calculate tilt from accelerometer (convert to rotation angles)
-      const accelMagnitude = Math.sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ)
-      if (accelMagnitude > 0.1) {
+    const accelMagnitude = Math.sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ)
+    if (accelMagnitude > 0.1) {
         // Calculate tilt in degrees from real accelerometer data
-        const tiltX = Math.atan2(accelY, Math.sqrt(accelX * accelX + accelZ * accelZ)) * (180 / Math.PI)
-        const tiltZ = Math.atan2(accelX, Math.sqrt(accelY * accelY + accelZ * accelZ)) * (180 / Math.PI)
-        
-        // Set target rotation from real accelerometer (more responsive)
-        targetRotation.current.x = tiltX
-        targetRotation.current.z = tiltZ
-      }
+      const tiltX = Math.atan2(accelY, Math.sqrt(accelX * accelX + accelZ * accelZ)) * (180 / Math.PI)
+      const tiltZ = Math.atan2(accelX, Math.sqrt(accelY * accelY + accelZ * accelZ)) * (180 / Math.PI)
       
+        // Set target rotation from real accelerometer (more responsive)
+      targetRotation.current.x = tiltX
+      targetRotation.current.z = tiltZ
+    }
+    
       // Apply real gyroscope rotation (cumulative angular velocity)
       gyroRotation.current.x += gyroX * delta * 0.15 // More responsive for real data
       gyroRotation.current.y += gyroY * delta * 0.15
       gyroRotation.current.z += gyroZ * delta * 0.15
-      
+    
       // Combine tilt (from accel) and gyro rotation - real data is more important
       targetRotation.current.x = targetRotation.current.x * 0.6 + gyroRotation.current.x * 0.4
       targetRotation.current.z = targetRotation.current.z * 0.6 + gyroRotation.current.z * 0.4
-      targetRotation.current.y = gyroRotation.current.y
-      
+    targetRotation.current.y = gyroRotation.current.y
+    
       // More responsive interpolation for real data
       const lerpFactor = 0.25 // Higher = more responsive to real sensor data
-      currentRotation.current.x += (targetRotation.current.x - currentRotation.current.x) * lerpFactor
-      currentRotation.current.y += (targetRotation.current.y - currentRotation.current.y) * lerpFactor
-      currentRotation.current.z += (targetRotation.current.z - currentRotation.current.z) * lerpFactor
+    currentRotation.current.x += (targetRotation.current.x - currentRotation.current.x) * lerpFactor
+    currentRotation.current.y += (targetRotation.current.y - currentRotation.current.y) * lerpFactor
+    currentRotation.current.z += (targetRotation.current.z - currentRotation.current.z) * lerpFactor
     } else {
       // No real data - use gentle wind animation
       const windSway = Math.sin(state.clock.elapsedTime * 0.8) * 1.5
@@ -121,7 +121,7 @@ function Tree3DModel({ accelX, accelY, accelZ, gyroX, gyroY, gyroZ, isCut, isTil
     [0.1, 0.25, -0.1, 0.18, 0.22],
     [-0.1, 0.25, 0.1, 0.18, 0.22],
   ]
-
+  
   return (
     <group ref={treeRef} position={[0, 0, 0]}>
       {/* Main Trunk - Optimized */}
@@ -165,7 +165,7 @@ function Tree3DModel({ accelX, accelY, accelZ, gyroX, gyroY, gyroZ, isCut, isTil
         <mesh position={[-0.01, -0.02, 0.015]} castShadow>
           <cylinderGeometry args={[0.004, 0.004, 0.01, 6]} />
           <meshStandardMaterial color="#95A5A6" metalness={0.9} />
-        </mesh>
+      </mesh>
       </group>
       
       {/* WiFi Signal Animation - Expanding rings from sensor */}

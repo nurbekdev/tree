@@ -53,9 +53,9 @@ const corsOptions = {
       console.log('CORS: Origin not in allowed list:', origin, 'Allowed:', allowedOrigins);
       // In production, be more permissive - allow same-origin requests
       if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('64.225.20.211') || origin.includes('209.38.61.156'))) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
       }
     }
   },
@@ -100,7 +100,7 @@ const io = new Server(server, {
           console.log('Socket.IO: Allowing origin based on domain match:', origin);
           callback(null, true);
         } else {
-          callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS'));
         }
       }
     },
