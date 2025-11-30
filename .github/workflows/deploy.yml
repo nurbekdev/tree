@@ -123,23 +123,50 @@ jobs:
             echo "Deploying backend..."
             cd backend
             
-            echo "Stopping existing containers..."
-            docker compose -f docker-compose.prod.yml down || true
+            echo "Stopping and removing existing containers..."
+            docker compose -f docker-compose.prod.yml down --remove-orphans || true
             
-          echo "Checking for processes using ports 3000 and 3001..."
-          lsof -ti:3000 | xargs -r kill -9 2>/dev/null || echo "No process on port 3000"
-          lsof -ti:3001 | xargs -r kill -9 2>/dev/null || echo "No process on port 3001"
-          sleep 2
-          
-          echo "Cleaning up Docker to free space..."
-          docker container prune -f || true
-          docker image prune -af || true
-          docker system prune -f || true
-          docker builder prune -af --filter "until=24h" || true
-          
-          echo "Removing any existing containers with same names..."
-          docker rm -f tree-monitor-api-prod tree-monitor-frontend-prod tree-monitor-db-prod 2>/dev/null || true
-          sleep 1
+            echo "Removing any existing containers with same names..."
+            docker rm -f tree-monitor-api-prod tree-monitor-frontend-prod tree-monitor-db-prod 2>/dev/null || true
+            
+            echo "Cleaning up Docker networks..."
+            docker network prune -f || true
+            
+            echo "Waiting for ports to be released..."
+            sleep 3
+            
+            echo "Checking for processes using ports 3000 and 3001..."
+            lsof -ti:3000 | xargs -r kill -9 2>/dev/null || echo "No process on port 3000"
+            lsof -ti:3001 | xargs -r kill -9 2>/dev/null || echo "No process on port 3001"
+            
+            echo "Checking for Docker containers using ports..."
+            for container_id in $(docker ps -a --format "{{.ID}}"); do
+                if docker port "$container_id" 2>/dev/null | grep -E ":(3000|3001)" > /dev/null; then
+                    echo "Removing container $container_id using port 3000 or 3001..."
+                    docker rm -f "$container_id" 2>/dev/null || true
+                fi
+            done
+            
+            echo "Waiting for ports to be fully released..."
+            sleep 2
+            
+            echo "Verifying ports are free..."
+            if lsof -ti:3000 > /dev/null 2>&1; then
+                echo "⚠️  Port 3000 is still in use, trying to free it..."
+                lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
+                sleep 2
+            fi
+            if lsof -ti:3001 > /dev/null 2>&1; then
+                echo "⚠️  Port 3001 is still in use, trying to free it..."
+                lsof -ti:3001 | xargs -r kill -9 2>/dev/null || true
+                sleep 2
+            fi
+            
+            echo "Cleaning up Docker to free space..."
+            docker container prune -f || true
+            docker image prune -af || true
+            docker system prune -f || true
+            docker builder prune -af --filter "until=24h" || true
           
           echo "Building new containers..."
           export COMPOSE_HTTP_TIMEOUT=3600
@@ -189,7 +216,7 @@ jobs:
           echo "✓ All Docker builds completed successfully"
             
             echo "Starting containers..."
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
             
             echo "Waiting for services to be ready..."
             sleep 5
