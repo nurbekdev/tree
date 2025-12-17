@@ -167,7 +167,7 @@ jobs:
             docker image prune -af || true
             docker system prune -f || true
             docker builder prune -af --filter "until=24h" || true
-          
+            
           echo "Building new containers..."
           export COMPOSE_HTTP_TIMEOUT=3600
           export DOCKER_CLIENT_TIMEOUT=3600

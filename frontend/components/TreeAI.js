@@ -212,16 +212,16 @@ export default function TreeAI() {
   }
 
   const getHealthColor = (score) => {
-    if (score >= 80) return 'text-green-600 bg-green-100'
-    if (score >= 60) return 'text-blue-600 bg-blue-100'
-    if (score >= 40) return 'text-yellow-600 bg-yellow-100'
-    return 'text-red-600 bg-red-100'
+    if (score >= 80) return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30'
+    if (score >= 60) return 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30'
+    if (score >= 40) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30'
+    return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30'
   }
 
   const getRiskColor = (level) => {
-    if (level === 'high') return 'text-red-600 bg-red-100'
-    if (level === 'medium') return 'text-yellow-600 bg-yellow-100'
-    return 'text-green-600 bg-green-100'
+    if (level === 'high') return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30'
+    if (level === 'medium') return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30'
+    return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30'
   }
 
   const getRiskLabel = (level) => {
@@ -232,11 +232,11 @@ export default function TreeAI() {
 
   if (loading && !analysis) {
     return (
-      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6">
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6 transition-colors">
         <div className="flex items-center justify-between">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900">{translations.title}</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">{translations.title}</h3>
         </div>
-        <p className="text-sm text-gray-600">{translations.loading}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{translations.loading}</p>
       </div>
     )
   }
@@ -246,18 +246,18 @@ export default function TreeAI() {
   }
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6">
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6 transition-colors">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div className="flex-1">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <span className="text-lg sm:text-xl">🤖</span>
             {translations.title}
           </h3>
-          <p className="text-xs sm:text-sm text-gray-600">{translations.subtitle}</p>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{translations.subtitle}</p>
         </div>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
           title={collapsed ? "Kengaytirish" : "Yig'ish"}
         >
           {collapsed ? <FiChevronDown className="w-5 h-5" /> : <FiChevronUp className="w-5 h-5" />}
@@ -268,16 +268,16 @@ export default function TreeAI() {
         <div className="space-y-4 sm:space-y-6">
 
           {/* Health Score */}
-          <div className="p-3 sm:p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+          <div className="p-3 sm:p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-700 rounded-lg transition-colors">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm sm:text-base font-semibold text-gray-900">{translations.healthScore}</h4>
+              <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">{translations.healthScore}</h4>
               <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-bold ${getHealthColor(analysis.avgHealthScore)}`}>
                 {analysis.avgHealthScore}%
               </span>
             </div>
-            <p className="text-xs text-gray-600 mb-2">{translations.healthScoreDesc}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{translations.healthScoreDesc}</p>
             <div className="flex items-center gap-2">
-              <div className="flex-1 bg-gray-200 rounded-full h-2">
+              <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
                   className={`h-2 rounded-full ${
                     analysis.avgHealthScore >= 80 ? 'bg-green-500' :
@@ -287,29 +287,29 @@ export default function TreeAI() {
                   style={{ width: `${analysis.avgHealthScore}%` }}
                 ></div>
               </div>
-              <span className="text-xs text-gray-600 whitespace-nowrap">{getHealthLabel(analysis.avgHealthScore)}</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">{getHealthLabel(analysis.avgHealthScore)}</span>
             </div>
           </div>
 
           {/* Risk Analysis */}
-          <div className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">{translations.riskAnalysis}</h4>
+          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors">
+            <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-2 sm:mb-3">{translations.riskAnalysis}</h4>
             <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-2 sm:mb-3">
-              <div className="text-center p-2 sm:p-3 bg-white rounded border">
-                <p className="text-xl sm:text-2xl font-bold text-red-600">{analysis.riskCounts.high}</p>
-                <p className="text-xs text-gray-600">{translations.highRisk}</p>
+              <div className="text-center p-2 sm:p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 transition-colors">
+                <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{analysis.riskCounts.high}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{translations.highRisk}</p>
               </div>
-              <div className="text-center p-2 sm:p-3 bg-white rounded border">
-                <p className="text-xl sm:text-2xl font-bold text-yellow-600">{analysis.riskCounts.medium}</p>
-                <p className="text-xs text-gray-600">{translations.mediumRisk}</p>
+              <div className="text-center p-2 sm:p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 transition-colors">
+                <p className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{analysis.riskCounts.medium}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{translations.mediumRisk}</p>
               </div>
-              <div className="text-center p-2 sm:p-3 bg-white rounded border">
-                <p className="text-xl sm:text-2xl font-bold text-green-600">{analysis.riskCounts.low}</p>
-                <p className="text-xs text-gray-600">{translations.lowRisk}</p>
+              <div className="text-center p-2 sm:p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 transition-colors">
+                <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{analysis.riskCounts.low}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{translations.lowRisk}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm text-gray-600">{translations.riskLevel}:</span>
+              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{translations.riskLevel}:</span>
               <span className={`px-2 py-0.5 sm:py-1 rounded text-xs font-semibold ${getRiskColor(analysis.riskLevel)}`}>
                 {getRiskLabel(analysis.riskLevel)}
               </span>
@@ -319,17 +319,17 @@ export default function TreeAI() {
           {/* Recommendations - Limit to 3 */}
           {analysis.recommendations.length > 0 && (
             <div>
-              <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">{translations.recommendations}</h4>
+              <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-2 sm:mb-3">{translations.recommendations}</h4>
               <div className="space-y-2 sm:space-y-3 max-h-48 overflow-y-auto">
                 {analysis.recommendations.slice(0, 3).map((rec, index) => (
                   <div
                     key={index}
-                    className={`p-2 sm:p-3 rounded-lg border ${
+                    className={`p-2 sm:p-3 rounded-lg border transition-colors ${
                       rec.priority === 'high'
-                        ? 'bg-red-50 border-red-200'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
                         : rec.priority === 'medium'
-                        ? 'bg-yellow-50 border-yellow-200'
-                        : 'bg-blue-50 border-blue-200'
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
+                        : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
                     }`}
                   >
                     <div className="flex items-start gap-2">
@@ -337,8 +337,8 @@ export default function TreeAI() {
                         {rec.priority === 'high' ? '🚨' : rec.priority === 'medium' ? '⚠️' : '💡'}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-xs sm:text-sm mb-0.5 sm:mb-1">{rec.title}</p>
-                        <p className="text-xs text-gray-700 line-clamp-2">{rec.message}</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-xs sm:text-sm mb-0.5 sm:mb-1">{rec.title}</p>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">{rec.message}</p>
                       </div>
                     </div>
                   </div>
@@ -348,19 +348,19 @@ export default function TreeAI() {
           )}
 
           {/* Trend Analysis */}
-          <div className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">{translations.trends}</h4>
+          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors">
+            <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">{translations.trends}</h4>
             <div className="flex items-center gap-2">
               <span className="text-xl sm:text-2xl flex-shrink-0">
                 {analysis.trend === 'improving' ? '📈' : analysis.trend === 'stable' ? '➡️' : '📉'}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-900">
+                <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">
                   {analysis.trend === 'improving' ? translations.improving :
                    analysis.trend === 'stable' ? translations.stable :
                    translations.declining}
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-400">
                   {analysis.totalTrees} ta daraxt
                 </p>
               </div>
@@ -368,7 +368,7 @@ export default function TreeAI() {
           </div>
 
           {analysis.timestamp && (
-            <p className="text-xs text-gray-500 mt-2 sm:mt-4 text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 sm:mt-4 text-center">
               {format(analysis.timestamp, 'dd.MM.yyyy HH:mm')}
             </p>
           )}

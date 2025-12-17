@@ -21,6 +21,11 @@ import {
 } from 'recharts'
 import { format, subDays } from 'date-fns'
 import dynamic from 'next/dynamic'
+import { FiShare2 } from 'react-icons/fi'
+import QRCodeModal from './QRCodeModal'
+import TreeAgeScore from './TreeAgeScore'
+import AIInsightsPanel from './AIInsightsPanel'
+import HealthspanBreakdown from './HealthspanBreakdown'
 
 // Dynamically import Leaflet map to avoid SSR issues
 const MapComponent = dynamic(() => import('./MapComponent'), { 
@@ -86,6 +91,7 @@ const translations = {
 
 export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
   const [editing, setEditing] = useState(false)
+  const [showQRModal, setShowQRModal] = useState(false)
   const [formData, setFormData] = useState({
     species: tree.species || '',
     planted_year: tree.planted_year || '',
@@ -103,6 +109,9 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
   // Use treeData state instead of tree prop to allow updates
   // Always use treeData if available, otherwise fall back to tree prop
   const currentTree = treeData || tree
+  
+  // Create shareUrl using currentTree (after it's defined)
+  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/tree/${currentTree.tree_id}`
   
   // Update currentTree reference when treeData changes
   useEffect(() => {
@@ -713,7 +722,7 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sticky Header */}
@@ -738,13 +747,22 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white/20 text-2xl font-bold w-10 h-10 flex items-center justify-center rounded-full transition-colors"
-            title="Yopish"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowQRModal(true)}
+              className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+              title="Ulashish"
+            >
+              <FiShare2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onClose}
+              className="text-white hover:bg-white/20 text-2xl font-bold w-10 h-10 flex items-center justify-center rounded-full transition-colors"
+              title="Yopish"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* Content - Grid Layout */}
@@ -752,91 +770,100 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Metadata (Sticky on large screens) */}
             <div className="lg:col-span-1 lg:sticky lg:top-6 lg:self-start space-y-6">
+              {/* Tree Age & Health Score - Hero Section */}
+              <TreeAgeScore 
+                tree={currentTree}
+                lastTelemetry={currentTelemetry}
+                telemetryHistory={currentTree.telemetry || []}
+              />
+
               {/* Current Real-time Status - Compact */}
               {isOffline ? (
-                <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-400 border-dashed rounded-xl shadow-sm">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 border-dashed rounded-lg shadow-sm transition-colors">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">⚫</span>
-                    <h3 className="text-lg font-bold text-gray-800">{translations.offline}</h3>
+                    <span className="text-xl sm:text-2xl">⚫</span>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200">{translations.offline}</h3>
                   </div>
-                  <p className="text-xs text-gray-600 mb-2">{translations.offlineMessage}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{translations.offlineMessage}</p>
                   {lastSeenDate && (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       <span className="font-semibold">{translations.lastSeen}:</span>{' '}
                       {format(lastSeenDate, 'dd.MM.yyyy HH:mm')}
                     </p>
                   )}
                 </div>
               ) : shouldShowTelemetry ? (
-                <div className="p-4 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 border-2 border-green-200 rounded-xl shadow-sm">
+                <div className="p-4 bg-white dark:bg-gray-800 border border-green-200 dark:border-green-700 rounded-lg shadow-sm transition-colors">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                       <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                       {translations.currentStatus}
                     </h3>
-                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                    <span className="text-xs bg-blue-500 dark:bg-blue-600 text-white px-2 py-0.5 rounded-full font-semibold animate-pulse">
                       {translations.realTime}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="bg-white p-3 rounded-lg border-2 border-blue-100 shadow-sm">
+                  <div className="grid grid-cols-1 gap-2 sm:gap-3">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-gray-700 uppercase">{translations.temperature}</span>
-                        <span className="text-xl">🌡️</span>
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">{translations.temperature}</span>
+                        <span className="text-lg sm:text-xl">🌡️</span>
                       </div>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {currentTelemetry.temp_c != null ? Number(currentTelemetry.temp_c).toFixed(1) : '-'}
-                        <span className="text-sm text-gray-500 ml-1">{translations.celsius}</span>
+                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 ml-1">{translations.celsius}</span>
                       </p>
                     </div>
-                    <div className="bg-white p-3 rounded-lg border-2 border-green-100 shadow-sm">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-sm">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-gray-700 uppercase">{translations.humidity}</span>
-                        <span className="text-xl">💧</span>
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">{translations.humidity}</span>
+                        <span className="text-lg sm:text-xl">💧</span>
                       </div>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {currentTelemetry.humidity_pct != null ? Number(currentTelemetry.humidity_pct).toFixed(1) : '-'}
-                        <span className="text-sm text-gray-500 ml-1">{translations.percent}</span>
+                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 ml-1">{translations.percent}</span>
                       </p>
                     </div>
-                    <div className={`p-3 rounded-lg border-2 shadow-sm ${
+                    <div className={`p-3 rounded-lg border shadow-sm transition-colors ${
                       (currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400)
-                        ? 'bg-red-50 border-red-300' 
-                        : 'bg-white border-yellow-100'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' 
+                        : 'bg-gray-50 dark:bg-gray-700/50 border-yellow-200 dark:border-yellow-700'
                     }`}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-gray-700 uppercase">{translations.smoke}</span>
-                        <span className="text-xl">{(currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) ? '🔥' : '💨'}</span>
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">{translations.smoke}</span>
+                        <span className="text-lg sm:text-xl">{(currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) ? '🔥' : '💨'}</span>
                       </div>
-                      <p className={`text-2xl font-bold ${
-                        (currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) ? 'text-red-700' : 'text-gray-900'
+                      <p className={`text-xl sm:text-2xl font-bold ${
+                        (currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) 
+                          ? 'text-red-700 dark:text-red-400' 
+                          : 'text-gray-900 dark:text-gray-100'
                       }`}>
                         {currentTelemetry.mq2 != null ? Number(currentTelemetry.mq2) : '-'}
-                        <span className="text-sm text-gray-500 ml-1">{translations.ppm}</span>
+                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 ml-1">{translations.ppm}</span>
                       </p>
                       {(currentTelemetry.mq2 != null && Number(currentTelemetry.mq2) > 400) && (
-                        <p className="text-xs text-red-600 mt-1 font-bold">⚠️ Yuqori!</p>
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-bold">⚠️ Yuqori!</p>
                       )}
                     </div>
                   </div>
                 </div>
               ) : !isOffline ? (
-                <div className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 border-dashed rounded-xl shadow-sm">
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 border-dashed rounded-lg shadow-sm transition-colors">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">⏳</span>
-                    <h3 className="text-sm font-bold text-yellow-800">Ma'lumotlar kutilmoqda...</h3>
+                    <span className="text-xl sm:text-2xl">⏳</span>
+                    <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">Ma'lumotlar kutilmoqda...</h3>
                   </div>
-                  <p className="text-xs text-yellow-700">Qurilma ulanib, ma'lumot yuborishni kutmoqda</p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400">Qurilma ulanib, ma'lumot yuborishni kutmoqda</p>
                 </div>
               ) : null}
 
               {/* 3D Tree Visualization - Show always (online or offline with historical data) */}
-                <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-sm">
-                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 mb-3">
                     <span className="text-lg">🌳</span>
                     3D Daraxt Ko'rinishi
                   {isOffline && (
-                    <span className="ml-auto text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                    <span className="ml-auto text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full">
                       📊 Tarixiy ma'lumot
                     </span>
                   )}
@@ -852,23 +879,23 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                   isTilt={mpu6050Data.isTilt}
                 />
                 {isOffline && (
-                  <p className="text-xs text-gray-500 mt-2 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
                     {mpu6050Data.accelX !== 0 || mpu6050Data.accelY !== 0 || mpu6050Data.accelZ !== -1
                       ? "Oxirgi 30 kunlik ma'lumotlardan MPU6050 ko'rsatilmoqda"
                       : "MPU6050 ma'lumotlari topilmadi"}
                   </p>
                 )}
                 {!isOffline && !currentTelemetry && (
-                    <p className="text-xs text-gray-500 mt-2 text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
                       MPU6050 ma'lumotlari kutilmoqda...
                     </p>
                   )}
                 </div>
 
               {/* Metadata Section */}
-              <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-sm">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <span className="text-lg">📋</span>
                     {translations.metadata}
                   </h3>
@@ -884,7 +911,7 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
 
                 <div className="space-y-3">
                   <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                       {translations.species}
                     </label>
                     {editing ? (
@@ -894,15 +921,15 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                         onChange={(e) =>
                           setFormData({ ...formData, species: e.target.value })
                         }
-                        className="w-full px-2 py-1.5 text-sm border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none transition-colors"
                       />
                     ) : (
-                      <p className="text-gray-900 font-semibold text-sm">{formData.species || <span className="text-gray-400">-</span>}</p>
+                      <p className="text-gray-900 dark:text-gray-100 font-semibold text-sm">{formData.species || <span className="text-gray-400 dark:text-gray-500">-</span>}</p>
                     )}
                   </div>
 
                   <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                       {translations.plantedYear}
                     </label>
                     {editing ? (
@@ -912,15 +939,15 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                         onChange={(e) =>
                           setFormData({ ...formData, planted_year: e.target.value })
                         }
-                        className="w-full px-2 py-1.5 text-sm border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none transition-colors"
                       />
                     ) : (
-                      <p className="text-gray-900 font-semibold text-sm">{formData.planted_year || <span className="text-gray-400">-</span>}</p>
+                      <p className="text-gray-900 dark:text-gray-100 font-semibold text-sm">{formData.planted_year || <span className="text-gray-400 dark:text-gray-500">-</span>}</p>
                     )}
                   </div>
 
                   <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                       {translations.notes}
                     </label>
                     {editing ? (
@@ -929,16 +956,16 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                         onChange={(e) =>
                           setFormData({ ...formData, notes: e.target.value })
                         }
-                        className="w-full px-2 py-1.5 text-sm border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none transition-colors"
                         rows="2"
                       />
                     ) : (
-                      <p className="text-gray-900 font-medium text-sm">{formData.notes || <span className="text-gray-400">-</span>}</p>
+                      <p className="text-gray-900 dark:text-gray-100 font-medium text-sm">{formData.notes || <span className="text-gray-400 dark:text-gray-500">-</span>}</p>
                     )}
                   </div>
 
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors">
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                     📍 {translations.latitude} / {translations.longitude}
                   </label>
                   {editing ? (
@@ -955,7 +982,7 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                               setMapPosition([parseFloat(lat), parseFloat(formData.longitude)])
                             }
                           }}
-                          className="px-3 py-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                          className="px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none transition-colors"
                           placeholder="Kenglik"
                         />
                         <input
@@ -969,12 +996,12 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                               setMapPosition([parseFloat(formData.latitude), parseFloat(lng)])
                             }
                           }}
-                          className="px-3 py-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                          className="px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none transition-colors"
                           placeholder="Uzunlik"
                         />
                       </div>
                       {/* Map for selecting location */}
-                      <div className="h-64 rounded-lg overflow-hidden border-2 border-gray-300">
+                      <div className="h-64 rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600">
                         <MapComponent
                           position={mapPosition}
                           onPositionChange={(lat, lng) => {
@@ -989,20 +1016,20 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                           treeId={currentTree.tree_id}
                         />
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         💡 Xaritada belgini siljitib, joylashuvni tanlang
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <p className="text-gray-900 font-semibold">
+                      <p className="text-gray-900 dark:text-gray-100 font-semibold">
                         {formData.latitude && formData.longitude
                           ? `${Number(formData.latitude).toFixed(8)}, ${Number(formData.longitude).toFixed(8)}`
-                          : <span className="text-gray-400">-</span>}
+                          : <span className="text-gray-400 dark:text-gray-500">-</span>}
                       </p>
                       {/* Map for displaying location */}
                       {formData.latitude && formData.longitude && (
-                        <div className="h-64 rounded-lg overflow-hidden border-2 border-gray-300">
+                        <div className="h-64 rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600">
                           <MapComponent
                             position={[parseFloat(formData.latitude), parseFloat(formData.longitude)]}
                             editable={false}
@@ -1014,8 +1041,8 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                   )}
                 </div>
 
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors">
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                     Daraxt rasmi
                   </label>
                   {editing ? (
@@ -1037,7 +1064,7 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                           </button>
                         </div>
                       ) : (
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center transition-colors">
                           <input
                             type="file"
                             accept="image/*"
@@ -1050,8 +1077,8 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                             className="cursor-pointer flex flex-col items-center gap-2"
                           >
                             <span className="text-4xl">📷</span>
-                            <span className="text-sm text-gray-600">Rasm yuklash uchun bosing</span>
-                            <span className="text-xs text-gray-500">JPG, PNG (maks. 5MB)</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Rasm yuklash uchun bosing</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">JPG, PNG (maks. 5MB)</span>
                           </label>
                         </div>
                       )}
@@ -1065,8 +1092,8 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                           className="w-full h-48 object-cover rounded-lg border-2 border-gray-300"
                         />
                       ) : (
-                        <div className="w-full h-48 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                          <span className="text-gray-400 text-sm">Rasm yuklanmagan</span>
+                        <div className="w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors">
+                          <span className="text-gray-400 dark:text-gray-500 text-sm">Rasm yuklanmagan</span>
                         </div>
                       )}
                     </div>
@@ -1096,94 +1123,128 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
 
             {/* Right Column - Charts and Alerts */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Healthspan Breakdown - Environmental Impact Analysis */}
+              <HealthspanBreakdown
+                tree={currentTree}
+                lastTelemetry={currentTelemetry}
+                telemetryHistory={currentTree.telemetry || []}
+              />
+
+              {/* AI Insights Panel */}
+              <AIInsightsPanel
+                tree={currentTree}
+                lastTelemetry={currentTelemetry}
+                telemetryHistory={currentTree.telemetry || []}
+              />
+
               {/* Alerts Section */}
               {(activeAlerts.length > 0 || acknowledgedAlerts.length > 0) && (
                 <div>
                 {/* Active Alerts */}
                 {activeAlerts.length > 0 && (
-                  <div className="mb-4 p-5 bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-xl shadow-sm">
-                    <h3 className="text-lg font-bold mb-4 text-red-900 flex items-center gap-2">
-                      <span className="text-xl">🚨</span>
-                      {translations.activeAlerts}
-                    </h3>
-                    <div className="space-y-3">
-                      {activeAlerts.map((alert) => (
-                        <div key={alert.id} className="bg-white p-4 rounded-xl border-2 border-red-200 shadow-sm hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="inline-block px-3 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full">
-                                  {alert.type === 'smoke' ? translations.smokeAlert : 
-                                   alert.type === 'cut' ? translations.cutAlert : 
-                                   translations.tiltAlert}
-                                </span>
-                                <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                                  alert.level === 'high' ? 'bg-red-200 text-red-900' : 'bg-yellow-200 text-yellow-900'
-                                }`}>
-                                  {alert.level === 'high' ? 'Yuqori' : 'O\'rtacha'}
-                                </span>
+                  <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-800 shadow-sm transition-colors">
+                    <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+                      <h3 className="text-base sm:text-lg font-semibold text-red-900 dark:text-red-400 flex items-center gap-2">
+                        <span className="text-lg sm:text-xl">🚨</span>
+                        {translations.activeAlerts}
+                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-semibold rounded-full">
+                          {activeAlerts.length}
+                        </span>
+                      </h3>
+                    </div>
+                    <div className="p-4 sm:p-5">
+                      <div className="space-y-3">
+                        {activeAlerts.map((alert) => (
+                          <div key={alert.id} className="bg-red-50 dark:bg-red-900/20 p-3 sm:p-4 rounded-lg border border-red-200 dark:border-red-800 transition-colors">
+                            <div className="flex justify-between items-start mb-2 sm:mb-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 flex-wrap">
+                                  <span className="inline-block px-2 sm:px-2.5 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 text-xs font-semibold rounded">
+                                    {alert.type === 'smoke' ? translations.smokeAlert : 
+                                     alert.type === 'cut' ? translations.cutAlert : 
+                                     translations.tiltAlert}
+                                  </span>
+                                  <span className={`px-1.5 sm:px-2 py-0.5 text-xs font-semibold rounded ${
+                                    alert.level === 'high' 
+                                      ? 'bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-200' 
+                                      : 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-300'
+                                  }`}>
+                                    {alert.level === 'high' ? 'Yuqori' : 'O\'rtacha'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                  {format(new Date(alert.created_at), 'dd.MM.yyyy HH:mm')}
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-500 mb-2">
-                                {format(new Date(alert.created_at), 'dd.MM.yyyy HH:mm')}
-                              </p>
+                              <button
+                                onClick={() => handleAcknowledgeAlert(alert.id)}
+                                className="px-2.5 sm:px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 rounded-lg transition-colors flex-shrink-0 ml-2"
+                              >
+                                ✓ {translations.acknowledge || 'Tasdiqlash'}
+                              </button>
                             </div>
-                            <button
-                              onClick={() => handleAcknowledgeAlert(alert.id)}
-                              className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold shadow-sm hover:shadow-md transition-all"
-                            >
-                              ✓ Tasdiqlash
-                            </button>
+                            <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 font-medium mb-2 line-clamp-2">{alert.message}</p>
+                            <div className="text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <strong className="text-gray-900 dark:text-gray-100">{translations.alertReason}:</strong>{' '}
+                              {alert.type === 'smoke' ? translations.smokeReason :
+                               alert.type === 'cut' ? translations.cutReason :
+                               translations.tiltReason}
+                            </div>
                           </div>
-                          <p className="text-sm text-gray-800 font-semibold mb-3">{alert.message}</p>
-                          <div className="text-xs text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                            <strong className="text-gray-900">{translations.alertReason}:</strong>{' '}
-                            {alert.type === 'smoke' ? translations.smokeReason :
-                             alert.type === 'cut' ? translations.cutReason :
-                             translations.tiltReason}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Acknowledged Alerts */}
+                {/* Acknowledged Alerts - Optimized with max-height and scroll */}
                 {acknowledgedAlerts.length > 0 && (
-                  <div className="p-5 bg-gray-50 border-2 border-gray-200 rounded-xl">
-                    <h3 className="text-lg font-bold mb-4 text-gray-700 flex items-center gap-2">
-                      <span className="text-xl">✓</span>
-                      {translations.acknowledgedAlerts}
-                    </h3>
-                    <div className="space-y-3">
-                      {acknowledgedAlerts.map((alert) => (
-                        <div key={alert.id} className="bg-white p-4 rounded-xl border-2 border-gray-300 opacity-80">
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="inline-block px-3 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-full">
-                                  {alert.type === 'smoke' ? translations.smokeAlert : 
-                                   alert.type === 'cut' ? translations.cutAlert : 
-                                   translations.tiltAlert}
-                                </span>
-                                <span className="px-2 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800">
-                                  ✓ {translations.acknowledged}
-                                </span>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+                    <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                        <span className="text-lg sm:text-xl">✓</span>
+                        {translations.acknowledgedAlerts}
+                        <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-full">
+                          {acknowledgedAlerts.length}
+                        </span>
+                      </h3>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto p-4 sm:p-5">
+                      <div className="space-y-2 sm:space-y-3">
+                        {acknowledgedAlerts.map((alert) => (
+                          <div key={alert.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors">
+                            <div className="flex items-start gap-2 sm:gap-3 mb-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                                  <span className="inline-block px-2 sm:px-2.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded">
+                                    {alert.type === 'smoke' ? translations.smokeAlert : 
+                                     alert.type === 'cut' ? translations.cutAlert : 
+                                     translations.tiltAlert}
+                                  </span>
+                                  <span className="px-1.5 sm:px-2 py-0.5 text-xs font-semibold rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                    ✓ {translations.acknowledged}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                                  {format(new Date(alert.created_at), 'dd.MM.yyyy HH:mm')}
+                                  {alert.ack_at && (
+                                    <span className="ml-1.5 text-green-600 dark:text-green-400">
+                                      • {format(new Date(alert.ack_at), 'dd.MM.yyyy HH:mm')}
+                                    </span>
+                                  )}
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-500 mb-2">
-                                {format(new Date(alert.created_at), 'dd.MM.yyyy HH:mm')}
-                                {alert.ack_at && ` • Tasdiqlangan: ${format(new Date(alert.ack_at), 'dd.MM.yyyy HH:mm')}`}
-                              </p>
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium mb-2 line-clamp-2">{alert.message}</p>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <strong className="text-gray-900 dark:text-gray-100">{translations.alertReason}:</strong>{' '}
+                              {alert.type === 'smoke' ? translations.smokeReason :
+                               alert.type === 'cut' ? translations.cutReason :
+                               translations.tiltReason}
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700 font-semibold mb-3">{alert.message}</p>
-                          <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                            <strong className="text-gray-900">{translations.alertReason}:</strong>{' '}
-                            {alert.type === 'smoke' ? translations.smokeReason :
-                             alert.type === 'cut' ? translations.cutReason :
-                             translations.tiltReason}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1191,17 +1252,17 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
             )}
 
               {/* Telemetry Charts */}
-              <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <span className="text-xl">📊</span>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-5">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <span className="text-lg sm:text-xl">📊</span>
                   {translations.telemetry}
                 </h3>
                 <div className="flex gap-3 items-center">
                   <select
                     value={timeRange}
                     onChange={(e) => setTimeRange(e.target.value)}
-                    className="px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white font-semibold focus:border-blue-500 focus:outline-none shadow-sm"
+                    className="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 font-semibold focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none shadow-sm transition-colors"
                   >
                     <option value="24h">{translations.last24Hours}</option>
                     <option value="7d">{translations.last7Days}</option>
@@ -1310,7 +1371,7 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                   </div>
 
                   {/* Main Chart */}
-                  <div className="bg-white p-4 rounded-xl border-2 border-gray-200 shadow-sm">
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
                     <ResponsiveContainer width="100%" height={350}>
                       <AreaChart data={filteredTelemetry} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
                         <defs>
@@ -1327,23 +1388,28 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                             <stop offset="95%" stopColor="#ffc658" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" className="dark:stroke-gray-600" />
                         <XAxis 
                           dataKey="timestamp" 
                           angle={-45}
                           textAnchor="end"
                           height={80}
-                          tick={{ fontSize: 10 }}
-                          stroke="#666"
+                          tick={{ fontSize: 10, fill: 'currentColor' }}
+                          className="text-gray-600 dark:text-gray-400"
+                          stroke="currentColor"
                         />
-                        <YAxis yAxisId="left" stroke="#8884d8" />
-                        <YAxis yAxisId="right" orientation="right" stroke="#ffc658" />
+                        <YAxis yAxisId="left" stroke="#8884d8" className="dark:stroke-blue-400" />
+                        <YAxis yAxisId="right" orientation="right" stroke="#ffc658" className="dark:stroke-yellow-400" />
                         <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'white', 
-                            border: '2px solid #ccc',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                          contentStyle={(props) => {
+                            const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
+                            return {
+                              backgroundColor: isDark ? '#1f2937' : 'white',
+                              border: isDark ? '2px solid #4b5563' : '2px solid #ccc',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                              color: isDark ? '#f3f4f6' : '#333'
+                            }
                           }}
                           formatter={(value, name) => {
                             // Convert value to number if it's not already
@@ -1364,6 +1430,7 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                         <Legend 
                           wrapperStyle={{ paddingTop: '20px' }}
                           iconType="line"
+                          className="text-gray-700 dark:text-gray-300"
                         />
                         <Area
                           yAxisId="left"
@@ -1414,13 +1481,13 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                           <p className="text-sm font-semibold text-gray-700">
                             <span className="font-bold text-blue-600">{filteredTelemetry.length}</span> ta ma'lumot
                           </p>
-                          <p className="text-xs text-gray-600">Real vaqtda yangilanadi</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Real vaqtda yangilanadi</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg">🔄</span>
                         <div>
-                          <p className="text-xs text-gray-600">Oxirgi yangilanish:</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Oxirgi yangilanish:</p>
                           <p className="text-sm font-semibold text-gray-800">
                             {currentTelemetry?.timestamp 
                               ? format(new Date(currentTelemetry.timestamp), 'HH:mm:ss')
@@ -1432,8 +1499,8 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white p-8 rounded-lg border-2 border-dashed border-gray-300">
-                  <p className="text-gray-500 text-center text-lg">
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 transition-colors">
+                  <p className="text-gray-500 dark:text-gray-400 text-center text-lg">
                     {translations.noData || "Ma'lumot yo'q"}
                   </p>
                 </div>
@@ -1443,6 +1510,15 @@ export default function TreeModal({ tree, onClose, onAlertAcknowledge }) {
           </div>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <QRCodeModal
+          tree={currentTree}
+          shareUrl={shareUrl}
+          onClose={() => setShowQRModal(false)}
+        />
+      )}
     </div>
   )
 }

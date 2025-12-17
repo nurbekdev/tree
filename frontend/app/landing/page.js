@@ -91,8 +91,8 @@ export default function LandingPage() {
         })
       }, observerOptions)
 
-      // Use setTimeout to ensure DOM is ready
-      const timeoutId = setTimeout(() => {
+      // Use requestAnimationFrame for better performance
+      const rafId = requestAnimationFrame(() => {
         try {
           const sections = document.querySelectorAll('.fade-in-section')
           sections.forEach((section) => {
@@ -103,10 +103,10 @@ export default function LandingPage() {
         } catch (error) {
           console.warn('Error observing sections:', error)
         }
-      }, 300)
+      })
 
       return () => {
-        clearTimeout(timeoutId)
+        cancelAnimationFrame(rafId)
         try {
           const sections = document.querySelectorAll('.fade-in-section')
           sections.forEach((section) => {
@@ -146,7 +146,7 @@ export default function LandingPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <Logo className="h-8 w-8" />
-              <span className="text-xl font-bold text-green-600">O'rmon agentligi</span>
+              <span className="text-xl font-bold text-green-600">Dala Qo'riqchisi</span>
             </div>
             
             {/* Desktop Menu */}
@@ -180,6 +180,16 @@ export default function LandingPage() {
                 }}
               >
                 Jamoa
+              </a>
+              <a 
+                href="#hardware" 
+                className="text-gray-700 hover:text-green-600 transition"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleNavClick('#hardware')
+                }}
+              >
+                Hardware
               </a>
               <a 
                 href="#yol-xaritasi" 
@@ -254,6 +264,28 @@ export default function LandingPage() {
                 >
                   <FaCode className="mr-3 text-blue-600 group-hover:scale-110 transition-transform" />
                   <span className="group-hover:translate-x-1 transition-transform">Jamoa</span>
+                </a>
+                <a
+                  href="#hardware"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleNavClick('#hardware')
+                  }}
+                  className="flex items-center px-6 py-4 text-gray-800 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 hover:text-orange-700 active:bg-orange-50 transition-all duration-200 font-semibold border-l-4 border-transparent hover:border-orange-600 group"
+                >
+                  <FaMicrochip className="mr-3 text-orange-600 group-hover:scale-110 transition-transform" />
+                  <span className="group-hover:translate-x-1 transition-transform">Hardware</span>
+                </a>
+                <a
+                  href="#healthspan"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleNavClick('#healthspan')
+                  }}
+                  className="flex items-center px-6 py-4 text-gray-800 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100 hover:text-emerald-700 active:bg-emerald-50 transition-all duration-200 font-semibold border-l-4 border-transparent hover:border-emerald-600 group"
+                >
+                  <FaBrain className="mr-3 text-emerald-600 group-hover:scale-110 transition-transform" />
+                  <span className="group-hover:translate-x-1 transition-transform">Healthspan</span>
                 </a>
                 <a
                   href="#yol-xaritasi"
@@ -517,6 +549,540 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Hardware Section */}
+      <section id="hardware" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-white via-gray-50 to-white relative overflow-hidden">
+        {/* Background Decoration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-96 h-96 bg-green-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: '1s' }}></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16 fade-in-section" id="hardware-header">
+            <div className="inline-block mb-6">
+              <span className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg animate-scale-in">
+                🔧 Hardware
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 animate-slide-in-up">
+              <span className="bg-gradient-to-r from-green-600 via-green-500 to-green-600 bg-clip-text text-transparent">
+                Hardware qurilmalari
+              </span>
+            </h2>
+            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-8 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
+              Professional IoT qurilmalari va sensorlar tizimi - daraxtlarni real-vaqtda kuzatish va himoya qilish uchun
+            </p>
+          </div>
+
+          {/* Hardware Image - Large and Professional */}
+          <div className="relative fade-in-section" id="hardware-image" style={{ animationDelay: '0.4s' }}>
+            <div className="bg-gradient-to-br from-white via-green-50 to-white rounded-3xl shadow-2xl p-6 md:p-10 lg:p-14 overflow-hidden border-4 border-green-300 hover:border-green-500 transition-all duration-500 transform hover:scale-[1.015] hover:shadow-3xl group">
+              {/* Decorative Corner Elements */}
+              <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-green-400/20 to-transparent rounded-br-full opacity-50 group-hover:opacity-75 transition-opacity"></div>
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-blue-400/20 to-transparent rounded-tl-full opacity-50 group-hover:opacity-75 transition-opacity"></div>
+              
+              {/* Image Container with Enhanced Professional Styling */}
+              <div className="relative w-full aspect-[21/9] md:aspect-[16/6] lg:aspect-[21/8] rounded-3xl overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 shadow-2xl border-4 border-green-100 group-hover:border-green-300 transition-all duration-500">
+                {/* Inner Glow Effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-green-200/10 via-transparent to-blue-200/10 pointer-events-none z-10"></div>
+                
+                <Image
+                  src="/hardware.jpg"
+                  alt="Hardware qurilmalari - IoT sensorlar va elektron platalar"
+                  width={1920}
+                  height={1080}
+                  className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
+                  priority
+                  quality={100}
+                />
+                
+                {/* Enhanced Overlay Gradients */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none z-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/5 pointer-events-none z-10"></div>
+                
+                {/* Shine Effect on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none z-10"></div>
+                
+                {/* Logo Watermark - Top Left Corner */}
+                <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-white/85 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-md border border-green-200/40 group-hover:bg-white/95 transition-all duration-300">
+                  <Logo size={20} className="flex-shrink-0" />
+                  <span className="text-xs font-semibold text-green-600 whitespace-nowrap">Dala Qo'riqchisi</span>
+                </div>
+              </div>
+              
+              {/* Hardware Info Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                {[
+                  {
+                    icon: <FaMicrochip />,
+                    title: 'ESP8266 Mikrokontroller',
+                    desc: 'Wi-Fi ulanishi va kuchli ishlov berish qobiliyati',
+                    color: 'from-blue-500 to-blue-600',
+                    bgColor: 'bg-blue-50',
+                    borderColor: 'border-blue-300'
+                  },
+                  {
+                    icon: <FaNetworkWired />,
+                    title: 'nRF24L01 Modul',
+                    desc: 'Wireless ma\'lumot uzatish uchun radio modul',
+                    color: 'from-purple-500 to-purple-600',
+                    bgColor: 'bg-purple-50',
+                    borderColor: 'border-purple-300'
+                  },
+                  {
+                    icon: <FaThermometerHalf />,
+                    title: 'Sensorlar',
+                    desc: 'DHT11, MQ-2, MPU6050 - harorat, tutun va harakat sensori',
+                    color: 'from-green-500 to-green-600',
+                    bgColor: 'bg-green-50',
+                    borderColor: 'border-green-300'
+                  }
+                ].map((item, idx) => (
+                  <div 
+                    key={idx}
+                    className={`${item.bgColor} p-6 rounded-xl border-2 ${item.borderColor} hover:shadow-xl transition-all duration-300 transform hover:scale-105 group`}
+                  >
+                    <div className={`bg-gradient-to-br ${item.color} w-16 h-16 rounded-xl flex items-center justify-center text-white text-2xl mb-4 shadow-lg transform group-hover:rotate-6 transition-transform`}>
+                      {item.icon}
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
+                    <p className="text-sm text-gray-600">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Technical Specifications */}
+              <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border-2 border-green-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                  <FaCode className="mr-2 text-green-600" />
+                  Texnik xususiyatlar
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start">
+                    <FaCheckCircle className="text-green-600 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <span className="font-semibold text-gray-800">Kuchlanish:</span>
+                      <span className="text-gray-600 ml-2">3.3V - 5V</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <FaCheckCircle className="text-green-600 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <span className="font-semibold text-gray-800">Aloqa:</span>
+                      <span className="text-gray-600 ml-2">Wi-Fi, nRF24L01</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <FaCheckCircle className="text-green-600 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <span className="font-semibold text-gray-800">Sensorlar:</span>
+                      <span className="text-gray-600 ml-2">DHT11, MQ-2, MPU6050</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <FaCheckCircle className="text-green-600 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <span className="font-semibold text-gray-800">Ishlash masofasi:</span>
+                      <span className="text-gray-600 ml-2">100m+ (nRF24L01)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Hardware Info */}
+          <div className="mt-12 grid md:grid-cols-2 gap-8 fade-in-section" id="hardware-info" style={{ animationDelay: '0.6s' }}>
+            <div className="bg-white p-8 rounded-2xl shadow-xl border-2 border-gray-100 hover:border-green-300 transition-all duration-300">
+              <div className="flex items-center mb-4">
+                <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-xl mr-4 text-white text-2xl shadow-lg">
+                  <FaCog />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Qanday ishlaydi?</h3>
+              </div>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                Har bir daraxtga o'rnatilgan transmitter qurilmalari sensorlar orqali ma'lumotlarni to'playdi va nRF24L01 modul orqali base stationga uzatadi. Base station esa Wi-Fi orqali ma'lumotlarni cloud serverga yuboradi.
+              </p>
+              <ul className="space-y-2 text-gray-600">
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+                  <span>Real-vaqtda ma'lumot to'plash</span>
+                </li>
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+                  <span>Wireless ma'lumot uzatish</span>
+                </li>
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+                  <span>Keng masofada ishlash</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl shadow-xl border-2 border-gray-100 hover:border-green-300 transition-all duration-300">
+              <div className="flex items-center mb-4">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-xl mr-4 text-white text-2xl shadow-lg">
+                  <FaShieldAlt />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Xavfsizlik va ishonchlilik</h3>
+              </div>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                Hardware qurilmalari qiyin iqlim sharoitlarida ham ishlash uchun mo'ljallangan. Barcha qurilmalar suv va changdan himoyalangan, uzun muddatli ishlash uchun optimallashtirilgan.
+              </p>
+              <ul className="space-y-2 text-gray-600">
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+                  <span>Iqlim sharoitlariga chidamli</span>
+                </li>
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+                  <span>Uzoq muddatli ishlash</span>
+                </li>
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+                  <span>Avtomatik qayta ulanish</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Biological Healthspan™ Section */}
+      <section id="healthspan" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-white via-emerald-50 to-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-16 fade-in-section" id="healthspan-header">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full mb-6">
+              <FaBrain className="text-emerald-600 dark:text-emerald-400" />
+              <span className="text-emerald-700 dark:text-emerald-300 font-semibold">AI-Powered Innovation</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Biological Healthspan<sup className="text-2xl">™</sup>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Daraxtlarning biologik sog'liq holatini aniq va tushunarli ko'rsatadigan sun'iy intellekt tizimi
+            </p>
+          </div>
+
+          {/* What is Healthspan? */}
+          <div className="grid md:grid-cols-2 gap-8 mb-16">
+            <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-emerald-200 hover:shadow-xl transition-all duration-300 fade-in-section">
+              <div className="flex items-center mb-6">
+                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 rounded-xl mr-4 shadow-lg">
+                  <FaLeaf className="text-white text-3xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Nima bu Healthspan?</h3>
+              </div>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                <strong>Biological Healthspan</strong> — bu daraxtning biologik yoshi va sog'liq holatini ko'rsatadigan ko'rsatkich.
+              </p>
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-emerald-500 mt-1 mr-3 flex-shrink-0" />
+                  <span>Ekilgan yil asosida hisoblanadi (real yosh)</span>
+                </li>
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-emerald-500 mt-1 mr-3 flex-shrink-0" />
+                  <span>Atrof-muhit sharoitlari tahlil qilinadi</span>
+                </li>
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-emerald-500 mt-1 mr-3 flex-shrink-0" />
+                  <span>Stress yoki optimal sharoitlar biologik yoshga ta'sir qiladi</span>
+                </li>
+                <li className="flex items-start">
+                  <FaCheckCircle className="text-emerald-500 mt-1 mr-3 flex-shrink-0" />
+                  <span>Har bir daraxt uchun aniq va tushunarli natija</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-50 to-green-50 p-8 rounded-2xl shadow-lg border-2 border-emerald-200 hover:shadow-xl transition-all duration-300 fade-in-section">
+              <div className="flex items-center mb-6">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-xl mr-4 shadow-lg">
+                  <FaCog className="text-white text-3xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Qanday ishlaydi?</h3>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <div className="bg-emerald-100 rounded-full p-2 mr-4 flex-shrink-0">
+                    <span className="text-emerald-700 font-bold text-sm">1</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Daraxt ekiladi</p>
+                    <p className="text-gray-700 text-sm">Real yosh hisoblanadi (hozirgi yil - ekilgan yil)</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-emerald-100 rounded-full p-2 mr-4 flex-shrink-0">
+                    <span className="text-emerald-700 font-bold text-sm">2</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Sensorlar kuzatadi</p>
+                    <p className="text-gray-700 text-sm">Harorat, namlik, tutun va harakat doimiy kuzatiladi</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-emerald-100 rounded-full p-2 mr-4 flex-shrink-0">
+                    <span className="text-emerald-700 font-bold text-sm">3</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">AI tahlil qiladi</p>
+                    <p className="text-gray-700 text-sm">Sun'iy intellekt stress yoki optimal sharoitlarni aniqlaydi</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-emerald-100 rounded-full p-2 mr-4 flex-shrink-0">
+                    <span className="text-emerald-700 font-bold text-sm">4</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Biologik yosh ko'rsatiladi</p>
+                    <p className="text-gray-700 text-sm">Aniq va tushunarli natija — yashil, sariq yoki qizil holat</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Example Story */}
+          <div className="bg-gradient-to-br from-blue-50 to-emerald-50 p-8 md:p-12 rounded-2xl shadow-xl border-2 border-emerald-200 mb-16 fade-in-section">
+            <div className="text-center mb-8">
+              <FaLightbulb className="text-5xl text-emerald-600 mx-auto mb-4" />
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">Misol: Qanday ishlaydi?</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-red-500">
+                <div className="flex items-center mb-4">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                    <span className="text-2xl font-bold text-red-600">7.0</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Stressed Tree</p>
+                    <p className="text-sm text-gray-600">Ekilgan: 2020</p>
+                  </div>
+                </div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  Daraxt 2020-yilda ekilgan — real yoshi <strong>5 yil</strong>. 
+                  Lekin yuqori harorat va tutun stressi tufayli biologik yoshi <strong>7 yil</strong>ga teng. 
+                  Bu daraxt stress ostida ekanligini ko'rsatadi.
+                </p>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-red-600 font-semibold">+2 yil qo'shildi</p>
+                  <p className="text-xs text-gray-600 mt-1">• Yuqori harorat stressi</p>
+                  <p className="text-xs text-gray-600">• Tutun ta'siri</p>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-emerald-500">
+                <div className="flex items-center mb-4">
+                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mr-4">
+                    <span className="text-2xl font-bold text-emerald-600">4.0</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Thriving Tree</p>
+                    <p className="text-sm text-gray-600">Ekilgan: 2020</p>
+                  </div>
+                </div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  Xuddi shu yilda ekilgan daraxt, lekin optimal sharoitlarda o'smoqda. 
+                  Real yoshi <strong>5 yil</strong>, biologik yoshi esa <strong>4 yil</strong>. 
+                  Bu daraxt sog'lom va yaxshi o'sayotganini ko'rsatadi.
+                </p>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-emerald-600 font-semibold">-1 yil ayirildi</p>
+                  <p className="text-xs text-gray-600 mt-1">• Optimal harorat</p>
+                  <p className="text-xs text-gray-600">• Yaxshi namlik balansi</p>
+                  <p className="text-xs text-gray-600">• Toza havo</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Visual Representation */}
+          <div className="mb-16 fade-in-section">
+            <h3 className="text-3xl font-bold text-gray-900 text-center mb-8">Vizual ko'rsatkichlar</h3>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-emerald-300 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse-glow-green">
+                  <span className="text-3xl font-bold text-white">4.2</span>
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2">Sog'lom</h4>
+                <p className="text-sm text-gray-600">Yashil rang — optimal sharoitlar</p>
+                <p className="text-xs text-emerald-600 mt-2 font-semibold">Biologik yosh &lt; real yosh</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-amber-300 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse-glow-yellow">
+                  <span className="text-3xl font-bold text-white">5.0</span>
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2">O'rtacha</h4>
+                <p className="text-sm text-gray-600">Sariq rang — normal holat</p>
+                <p className="text-xs text-amber-600 mt-2 font-semibold">Biologik yosh ≈ real yosh</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-red-300 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse-glow-red">
+                  <span className="text-3xl font-bold text-white">7.8</span>
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2">Xavfli</h4>
+                <p className="text-sm text-gray-600">Qizil rang — stress holati</p>
+                <p className="text-xs text-red-600 mt-2 font-semibold">Biologik yosh &gt; real yosh</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Explainability & Trust */}
+          <div className="bg-white p-8 md:p-12 rounded-2xl shadow-xl border-2 border-emerald-200 mb-16 fade-in-section">
+            <div className="text-center mb-8">
+              <FaShieldAlt className="text-5xl text-emerald-600 mx-auto mb-4" />
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">Shaffoflik va ishonchlilik</h3>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Har bir biologik yosh hisob-kitobi aniq sabablar bilan ko'rsatiladi. 
+                Hech qanday "qora quti" qarorlar yo'q — hamma narsa ochiq va tushunarli.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-red-50 p-6 rounded-xl border-l-4 border-red-500">
+                <h4 className="font-bold text-gray-900 mb-3 flex items-center">
+                  <FaExclamationTriangle className="text-red-500 mr-2" />
+                  Stress omillari
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start">
+                    <span className="text-red-600 font-semibold mr-2">+2 oy</span>
+                    <span>Yuqori harorat stressi tufayli</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-red-600 font-semibold mr-2">+6 oy</span>
+                    <span>Tutun ta'siri (yong'in yoki ifloslanish)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-red-600 font-semibold mr-2">+3 oy</span>
+                    <span>Past namlik davri</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-red-600 font-semibold mr-2">+4 oy</span>
+                    <span>Abnormal harakat (kesish yoki shikastlanish)</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-emerald-50 p-6 rounded-xl border-l-4 border-emerald-500">
+                <h4 className="font-bold text-gray-900 mb-3 flex items-center">
+                  <FaCheckCircle className="text-emerald-500 mr-2" />
+                  Optimal sharoitlar
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start">
+                    <span className="text-emerald-600 font-semibold mr-2">-2 oy</span>
+                    <span>Optimal harorat sharoitlari</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-600 font-semibold mr-2">-3 oy</span>
+                    <span>Yaxshi namlik balansi</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-600 font-semibold mr-2">-4 oy</span>
+                    <span>Toza havo (past tutun)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-600 font-semibold mr-2">-2 oy</span>
+                    <span>Barqaror o'sish sharoitlari</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Benefits Section */}
+          <div className="mb-16 fade-in-section">
+            <h3 className="text-3xl font-bold text-gray-900 text-center mb-8">Foydalar</h3>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                {
+                  icon: <FaExclamationTriangle />,
+                  title: 'Xavfli daraxtlarni aniqlash',
+                  desc: 'Stress ostidagi daraxtlarni darhol ko\'ring va ularga e\'tibor bering'
+                },
+                {
+                  icon: <FaChartLine />,
+                  title: 'Tekshiruv vaqtini qisqartirish',
+                  desc: 'Qaysi daraxtlarga ehtiyoj borligini oldindan biling'
+                },
+                {
+                  icon: <FaCog />,
+                  title: 'Samarali texnik xizmat',
+                  desc: 'Resurslarni eng zarur joylarga yo\'naltiring'
+                },
+                {
+                  icon: <FaDatabase />,
+                  title: 'Ma\'lumotlarga asoslangan qarorlar',
+                  desc: 'His-hisoblar emas, aniq ma\'lumotlar asosida qaror qiling'
+                },
+                {
+                  icon: <FaBell />,
+                  title: 'Erta xavf aniqlash',
+                  desc: 'Atrof-muhit tahdidlarini erta aniqlang va oldini oling'
+                },
+                {
+                  icon: <FaLeaf />,
+                  title: 'O\'rmon va bog\' boshqaruvi',
+                  desc: 'Yashil maydonlarni samarali boshqaring va kuzatib boring'
+                }
+              ].map((benefit, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-xl shadow-lg border-2 border-emerald-100 hover:border-emerald-300 hover:shadow-xl transition-all duration-300">
+                  <div className="text-emerald-600 text-3xl mb-4">{benefit.icon}</div>
+                  <h4 className="font-bold text-gray-900 mb-2">{benefit.title}</h4>
+                  <p className="text-gray-600 text-sm">{benefit.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Technology Section (High-level) */}
+          <div className="bg-gradient-to-br from-gray-50 to-emerald-50 p-8 md:p-12 rounded-2xl shadow-xl border-2 border-emerald-200 fade-in-section">
+            <div className="text-center mb-8">
+              <FaMicrochip className="text-5xl text-emerald-600 mx-auto mb-4" />
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">Texnologiya</h3>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Qiyin texnik tafsilotlar emas — oddiy va ishonchli yechim
+              </p>
+            </div>
+            <div className="grid md:grid-cols-4 gap-6">
+              {[
+                {
+                  icon: <FaNetworkWired />,
+                  title: 'IoT Sensorlar',
+                  desc: 'Har bir daraxtga o\'rnatilgan sensorlar'
+                },
+                {
+                  icon: <FaWifi />,
+                  title: 'Real-vaqtda uzatish',
+                  desc: 'Ma\'lumotlar darhol cloud\'ga uzatiladi'
+                },
+                {
+                  icon: <FaBrain />,
+                  title: 'AI tahlil',
+                  desc: 'Sun\'iy intellekt biologik yoshni hisoblaydi'
+                },
+                {
+                  icon: <FaCloud />,
+                  title: 'Cloud Dashboard',
+                  desc: 'Har qanday qurilmadan kirish mumkin'
+                }
+              ].map((tech, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-xl shadow-md text-center">
+                  <div className="text-emerald-600 text-4xl mb-4">{tech.icon}</div>
+                  <h4 className="font-bold text-gray-900 mb-2">{tech.title}</h4>
+                  <p className="text-gray-600 text-sm">{tech.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Telemetriya Demo Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-green-50">
         <div className="max-w-7xl mx-auto">
@@ -744,32 +1310,6 @@ export default function LandingPage() {
                   linkedin: '#',
                   twitter: '#'
                 }
-              },
-              {
-                name: 'Salohiddinov Bekzod',
-                role: 'DevOps Engineer',
-                description: 'CI/CD pipeline, Docker containerization, server deployment va monitoring',
-                skills: ['Docker', 'CI/CD', 'Nginx', 'Linux', 'Monitoring'],
-                image: null,
-                icon: <FaDocker className="text-4xl" />,
-                links: {
-                  github: '#',
-                  linkedin: '#',
-                  twitter: '#'
-                }
-              },
-              {
-                name: 'Javohir Toshqurg\'onov',
-                role: 'AI/ML Specialist',
-                description: 'Machine Learning algoritmlari, daraxt ma\'lumotlari tahlili va bashorat modellari',
-                skills: ['Machine Learning', 'Data Analysis', 'Predictive Models', 'Pattern Recognition'],
-                image: null,
-                icon: <FaBrain className="text-4xl" />,
-                links: {
-                  github: '#',
-                  linkedin: '#',
-                  twitter: '#'
-                }
               }
             ].map((member, idx) => (
               <div 
@@ -916,92 +1456,79 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Roadmap Section */}
-      <section id="yol-xaritasi" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-green-50 to-white relative overflow-hidden">
-        {/* Background Decoration */}
+      {/* Roadmap Section - Redesigned */}
+      <section id="yol-xaritasi" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-green-50 to-blue-50 relative overflow-hidden">
+        {/* Enhanced Background Decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 right-20 w-96 h-96 bg-green-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-          <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-10 right-10 w-[500px] h-[500px] bg-gradient-to-br from-green-200/30 to-green-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-float"></div>
+          <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-gradient-to-tr from-blue-200/30 to-blue-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-float" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-purple-200/20 to-pink-200/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float" style={{ animationDelay: '3s' }}></div>
         </div>
         
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-16 fade-in-section" id="roadmap-header">
-            <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4 animate-slide-in-up">
-              Yo'l xaritasi
+          <div className="text-center mb-20 fade-in-section" id="roadmap-header">
+            <div className="inline-block mb-6">
+              <span className="bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 text-white px-8 py-3 rounded-full text-sm font-bold shadow-2xl animate-scale-in">
+                🚀 Rivojlanish Yo'l Xaritasi
+              </span>
+            </div>
+            <h2 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 animate-slide-in-up">
+              <span className="bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Loyiha Tarixi
+              </span>
             </h2>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto mb-6 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
-              Loyihaning rivojlanish bosqichlari va muvaffaqiyatlar
+            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-10 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
+              Har bir bosqich - muvaffaqiyatga olib boradigan qadam
             </p>
             
-            {/* Progress Bar */}
-            <div className="max-w-3xl mx-auto">
-              <div className="bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+            {/* Enhanced Progress Bar with Milestones */}
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-full h-4 overflow-hidden shadow-inner border-2 border-gray-300">
                 <div 
-                  className="bg-gradient-to-r from-green-500 via-green-600 to-green-700 h-full rounded-full transition-all duration-1000"
+                  className="bg-gradient-to-r from-yellow-400 via-blue-500 via-purple-500 to-green-500 h-full rounded-full transition-all duration-2000 relative overflow-hidden"
                   style={{ width: '100%' }}
                 >
-                  <div className="h-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+                  <div className="absolute inset-0 shimmer opacity-50"></div>
                 </div>
               </div>
-              <div className="flex justify-between mt-2 text-sm text-gray-600">
-                <span>Idea</span>
-                <span>Prototype</span>
-                <span>MVP</span>
-                <span className="font-bold text-green-600">Launched ✓</span>
+              <div className="flex justify-between mt-4 text-sm font-semibold">
+                <span className="text-yellow-600">Idea</span>
+                <span className="text-blue-600">Prototype</span>
+                <span className="text-purple-600">MVP</span>
+                <span className="text-green-600 font-bold text-base">Launched ✓</span>
               </div>
             </div>
           </div>
 
           <div className="relative">
-            {/* Enhanced Timeline Line with Gradient and Animation */}
-            <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 h-full w-2 bg-gradient-to-b from-green-300 via-green-500 to-green-700 shadow-2xl rounded-full">
-              <div className="absolute inset-0 bg-gradient-to-b from-green-400 via-green-500 to-green-600 rounded-full shimmer"></div>
+            {/* Modern Vertical Timeline Line with Enhanced Design - Lower z-index */}
+            <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gradient-to-b from-yellow-300 via-blue-400 via-purple-400 to-green-500 shadow-2xl rounded-full z-[1]">
+              <div className="absolute inset-0 bg-gradient-to-b from-yellow-400 via-blue-500 via-purple-500 to-green-600 rounded-full shimmer opacity-80"></div>
             </div>
             
-            {/* Enhanced Progress Indicators on Timeline - Fixed z-index */}
-            <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 h-full z-0">
+            {/* Simplified Progress Indicators - Proper spacing to avoid overlap */}
+            <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 h-full z-[2] pointer-events-none">
               {[
-                { progress: 0, status: 'completed', colorClass: 'yellow', borderClass: 'border-yellow-500', bgClass: 'from-yellow-400 to-yellow-600', glowClass: 'bg-yellow-200', ringClass: 'border-yellow-400', badgeClass: 'bg-yellow-500' },
-                { progress: 33, status: 'completed', colorClass: 'blue', borderClass: 'border-blue-500', bgClass: 'from-blue-400 to-blue-600', glowClass: 'bg-blue-200', ringClass: 'border-blue-400', badgeClass: 'bg-blue-500' },
-                { progress: 66, status: 'completed', colorClass: 'purple', borderClass: 'border-purple-500', bgClass: 'from-purple-400 to-purple-600', glowClass: 'bg-purple-200', ringClass: 'border-purple-400', badgeClass: 'bg-purple-500' },
-                { progress: 100, status: 'active', colorClass: 'green', borderClass: 'border-green-500', bgClass: 'from-green-400 to-green-600', glowClass: 'bg-green-200', ringClass: 'border-green-400', badgeClass: 'bg-green-500' }
+                { progress: 5, status: 'completed', colorClass: 'yellow', borderClass: 'border-yellow-500', bgClass: 'from-yellow-400 to-yellow-600' },
+                { progress: 35, status: 'completed', colorClass: 'blue', borderClass: 'border-blue-500', bgClass: 'from-blue-400 to-blue-600' },
+                { progress: 65, status: 'completed', colorClass: 'purple', borderClass: 'border-purple-500', bgClass: 'from-purple-400 to-purple-600' },
+                { progress: 95, status: 'active', colorClass: 'green', borderClass: 'border-green-500', bgClass: 'from-green-400 to-green-600' }
               ].map((marker, idx) => (
                 <div
                   key={idx}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-0"
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2"
                   style={{ top: `${marker.progress}%` }}
                 >
-                  {/* Outer Glow */}
-                  <div className={`absolute inset-0 w-20 h-20 ${marker.glowClass} rounded-full opacity-30 blur-xl animate-pulse -z-10`}></div>
-                  
-                  {/* Main Circle */}
-                  <div className={`relative w-20 h-20 bg-white rounded-full border-4 ${marker.borderClass} shadow-2xl flex items-center justify-center transform hover:scale-110 transition-all duration-300 z-0`}>
-                    {/* Inner Gradient Circle */}
-                    <div className={`w-14 h-14 bg-gradient-to-br ${marker.bgClass} rounded-full flex items-center justify-center text-white text-2xl shadow-inner`}>
+                  {/* Simplified Main Circle - No overlapping effects */}
+                  <div className={`relative w-14 h-14 bg-white rounded-full border-2 ${marker.borderClass} shadow-lg flex items-center justify-center`}>
+                    <div className={`w-10 h-10 bg-gradient-to-br ${marker.bgClass} rounded-full flex items-center justify-center text-white text-base shadow-inner`}>
                       {marker.status === 'completed' ? (
-                        <FaCheckCircle className="animate-scale-in" />
+                        <FaCheckCircle className="text-sm" />
                       ) : marker.status === 'active' ? (
-                        <FaRocket className="animate-bounce" />
+                        <FaRocket className="text-sm" />
                       ) : null}
                     </div>
-                    
-                    {/* Pulse Rings */}
-                    {marker.status === 'active' && (
-                      <>
-                        <div className={`absolute inset-0 border-4 ${marker.ringClass} rounded-full animate-ping opacity-75 -z-10`}></div>
-                        <div className={`absolute inset-0 border-4 ${marker.ringClass} rounded-full animate-ping opacity-50 -z-10`} style={{ animationDelay: '0.5s' }}></div>
-                      </>
-                    )}
-                    
-                    {/* Completed Checkmark Ring */}
-                    {marker.status === 'completed' && idx < 3 && (
-                      <div className={`absolute -inset-2 border-2 ${marker.ringClass} rounded-full animate-pulse opacity-50 -z-10`}></div>
-                    )}
-                  </div>
-                  
-                  {/* Progress Number Badge - moved to avoid overlap */}
-                  <div className={`absolute -bottom-10 left-1/2 transform -translate-x-1/2 ${marker.badgeClass} text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg whitespace-nowrap z-0`}>
-                    {marker.progress === 0 ? 'Start' : marker.progress === 100 ? 'Current' : `${marker.progress}%`}
                   </div>
                 </div>
               ))}
@@ -1013,9 +1540,9 @@ export default function LandingPage() {
                   phase: 'Idea',
                   status: 'completed',
                   icon: <FaLightbulb />,
-                  desc: 'O\'rmon monitoring muammosini aniqlash va yechim konseptini ishlab chiqish',
+                  desc: 'Dala monitoring muammosini aniqlash va yechim konseptini ishlab chiqish',
                   features: ['Muammo tahlili', 'Yechim konsepti', 'Texnik talablar', 'Loyiha rejasi'],
-                  date: '2024 Q1',
+                  date: '2024 Yanvar - Mart',
                   progress: 100,
                   color: 'from-yellow-400 to-yellow-600',
                   bgColor: 'bg-yellow-50',
@@ -1028,7 +1555,7 @@ export default function LandingPage() {
                   icon: <FaCog />,
                   desc: 'Asosiy funksionallikni ishlab chiqish va sinovdan o\'tkazish',
                   features: ['Hardware prototip', 'Basic firmware', 'Simple dashboard', 'Sensor integratsiyasi'],
-                  date: '2024 Q2',
+                  date: '2024 Aprel - Iyun',
                   progress: 100,
                   color: 'from-blue-400 to-blue-600',
                   bgColor: 'bg-blue-50',
@@ -1041,7 +1568,7 @@ export default function LandingPage() {
                   icon: <FaRocket />,
                   desc: 'Minimal viable product - asosiy funksiyalar bilan ishlaydigan tizim',
                   features: ['3 Transmitter', 'Base station', 'Web dashboard', 'Real-time monitoring', 'Alert tizimi'],
-                  date: '2024 Q3',
+                  date: '2024 Iyul - Sentabr',
                   progress: 100,
                   color: 'from-purple-400 to-purple-600',
                   bgColor: 'bg-purple-50',
@@ -1053,8 +1580,8 @@ export default function LandingPage() {
                   status: 'active',
                   icon: <FaCheckCircle />,
                   desc: 'Production-ready tizim - to\'liq funksionallik va deployment',
-                  features: ['Production deployment', 'CI/CD pipeline', '3D visualization', 'Public sharing', 'Mobile responsive'],
-                  date: '2024 Q4',
+                  features: ['Production deployment', 'CI/CD pipeline', '3D visualization', 'Public sharing', 'Mobile responsive', 'Hardware optimizatsiya'],
+                  date: '2024 Oktabr - 2025 Yanvar',
                   progress: 100,
                   color: 'from-green-400 to-green-600',
                   bgColor: 'bg-green-50',
@@ -1067,38 +1594,41 @@ export default function LandingPage() {
                   className="relative fade-in-section z-10"
                   id={`roadmap-stage-${idx}`}
                 >
-                  <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
                     {/* Left Side - Even Index */}
-                    <div className={`w-full md:w-5/12 ${idx % 2 === 0 ? 'md:order-1' : 'md:order-2'} ${idx % 2 === 0 ? 'animate-slide-in-left' : 'animate-slide-in-right'} relative z-20`}>
-                      <div className={`relative ${stage.bgColor} p-8 rounded-2xl shadow-xl border-2 ${stage.borderColor} transform hover:scale-105 hover:shadow-2xl transition-all duration-300 overflow-hidden group z-20`}>
+                    <div className={`w-full md:w-5/12 ${idx % 2 === 0 ? 'md:order-1' : 'md:order-2'} relative z-30`}>
+                      <div className={`relative ${stage.bgColor} p-8 md:p-10 rounded-3xl shadow-2xl border-4 ${stage.borderColor} transform hover:scale-[1.01] hover:shadow-3xl transition-all duration-300 overflow-hidden group z-30 backdrop-blur-sm`}>
                         {/* Shimmer Effect */}
                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                           <div className="absolute inset-0 shimmer"></div>
                         </div>
                         
-                        {/* Status Badge with Animation */}
-                        <div className="absolute -top-4 -right-4 z-10">
+                        {/* Status Badge with Animation - Improved spacing and sizing */}
+                        <div className="absolute -top-2 -right-2 z-10">
                           {stage.status === 'completed' ? (
-                            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-xl flex items-center transform hover:scale-110 transition-transform animate-scale-in">
-                              <FaCheckCircle className="mr-2 text-lg" />
-                              Tugallandi
+                            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-5 py-2.5 rounded-full text-sm md:text-base font-bold shadow-xl flex items-center gap-2.5 min-w-fit">
+                              <FaCheckCircle className="text-base md:text-lg flex-shrink-0" />
+                              <span className="whitespace-nowrap">Tugallandi</span>
                             </div>
                           ) : stage.status === 'active' ? (
-                            <div className="bg-gradient-to-r from-green-500 via-green-600 to-green-700 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-xl flex items-center animate-pulse transform hover:scale-110 transition-transform">
-                              <FaRocket className="mr-2 text-lg animate-bounce" />
-                              Joriy
+                            <div className="bg-gradient-to-r from-green-500 via-green-600 to-green-700 text-white px-5 py-2.5 rounded-full text-sm md:text-base font-bold shadow-xl flex items-center gap-2.5 min-w-fit animate-pulse">
+                              <FaRocket className="text-base md:text-lg flex-shrink-0" />
+                              <span className="whitespace-nowrap">Joriy</span>
                             </div>
                           ) : null}
                         </div>
 
-                        {/* Phase Header */}
-                        <div className="flex items-center mb-6 relative z-10">
-                          <div className={`bg-gradient-to-br ${stage.color} p-5 rounded-xl mr-4 text-white text-3xl shadow-xl transform group-hover:rotate-6 transition-transform duration-300`}>
-                            {stage.icon}
+                        {/* Phase Header - Enhanced */}
+                        <div className="flex items-center mb-8 relative z-10">
+                          <div className={`bg-gradient-to-br ${stage.color} p-6 rounded-2xl mr-5 text-white text-4xl shadow-2xl transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 relative overflow-hidden`}>
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                            <div className="relative z-10">{stage.icon}</div>
                           </div>
-                          <div>
-                            <h3 className="text-3xl font-bold text-gray-900 mb-1">{stage.phase}</h3>
-                            <p className="text-sm text-gray-500 font-semibold">{stage.date}</p>
+                          <div className="flex-1">
+                            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">{stage.phase}</h3>
+                            <div className="flex items-center">
+                              <span className="text-base md:text-lg text-gray-600 font-semibold bg-white/70 px-4 py-1.5 rounded-full border-2 border-gray-200">{stage.date}</span>
+                            </div>
                           </div>
                         </div>
 
@@ -1147,22 +1677,14 @@ export default function LandingPage() {
                       </div>
                     </div>
                     
-                    {/* Enhanced Center Timeline Dot - Desktop - Lower z-index */}
-                    <div className={`hidden md:flex absolute left-1/2 transform -translate-x-1/2 z-0`}>
-                      <div className={`w-24 h-24 ${stage.bgColor} rounded-full border-4 ${stage.borderColor} items-center justify-center shadow-2xl flex transform hover:scale-110 transition-all duration-300 z-0`}>
-                        <div className={`bg-gradient-to-br ${stage.color} w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl shadow-inner relative`}>
-                          {stage.status === 'completed' && <FaCheckCircle className="animate-scale-in" />}
-                          {stage.status === 'active' && <FaRocket className="animate-bounce" />}
-                          {stage.status === 'pending' && <FaCog className="animate-spin" />}
+                    {/* Simplified Center Timeline Dot - Desktop - Proper positioning */}
+                    <div className={`hidden md:flex absolute left-1/2 transform -translate-x-1/2 z-[3] pointer-events-none`} style={{ top: `${idx === 0 ? '5%' : idx === 1 ? '35%' : idx === 2 ? '65%' : '95%'}` }}>
+                      <div className={`w-14 h-14 ${stage.bgColor} rounded-full border-2 ${stage.borderColor} items-center justify-center shadow-lg flex relative`}>
+                        <div className={`bg-gradient-to-br ${stage.color} w-10 h-10 rounded-full flex items-center justify-center text-white text-base shadow-inner`}>
+                          {stage.status === 'completed' && <FaCheckCircle className="text-sm" />}
+                          {stage.status === 'active' && <FaRocket className="text-sm" />}
+                          {stage.status === 'pending' && <FaCog className="text-sm" />}
                         </div>
-                        {/* Multiple Pulse Rings for Active */}
-                        {stage.status === 'active' && (
-                          <>
-                            <div className={`absolute inset-0 border-4 ${stage.borderColor.replace('border-', 'border-').replace('-500', '-400')} rounded-full animate-ping opacity-75`}></div>
-                            <div className={`absolute inset-0 border-4 ${stage.borderColor.replace('border-', 'border-').replace('-500', '-300')} rounded-full animate-ping opacity-50`} style={{ animationDelay: '0.3s' }}></div>
-                            <div className={`absolute inset-0 border-4 ${stage.borderColor.replace('border-', 'border-').replace('-500', '-200')} rounded-full animate-ping opacity-25`} style={{ animationDelay: '0.6s' }}></div>
-                          </>
-                        )}
                       </div>
                     </div>
 
@@ -1346,7 +1868,7 @@ export default function LandingPage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-green-600 to-green-700 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            O'rmonlarni himoya qilishda bizga qo'shiling
+            Dalalarni himoya qilishda bizga qo'shiling
           </h2>
           <p className="text-xl mb-8 opacity-90">
             Demo versiyani ko'rib chiqing yoki biz bilan bog'laning
@@ -1359,7 +1881,7 @@ export default function LandingPage() {
               Demo ko'rish
             </Link>
             <a 
-              href="mailto:info@ormon-agentligi.uz"
+              href="mailto:info@dala-qoriqchisi.uz"
               className="bg-green-800 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-900 transition border-2 border-white"
             >
               Bog'lanish
@@ -1375,7 +1897,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center space-x-3 mb-4">
                 <Logo className="h-8 w-8" />
-                <span className="text-xl font-bold">O'rmon agentligi</span>
+                <span className="text-xl font-bold">Dala Qo'riqchisi</span>
               </div>
               <p className="text-gray-400">
                 Aqlli daraxt monitoring tizimi
@@ -1386,6 +1908,8 @@ export default function LandingPage() {
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#muammo" className="hover:text-white transition">Muammo</a></li>
                 <li><a href="#yechim" className="hover:text-white transition">Yechim</a></li>
+                <li><a href="#hardware" className="hover:text-white transition">Hardware</a></li>
+                <li><a href="#healthspan" className="hover:text-white transition">Healthspan</a></li>
                 <li><a href="#jamoa" className="hover:text-white transition">Jamoa</a></li>
                 <li><a href="#yol-xaritasi" className="hover:text-white transition">Yo'l xaritasi</a></li>
               </ul>
@@ -1415,7 +1939,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 O'rmon agentligi. Barcha huquqlar himoyalangan.</p>
+            <p>&copy; 2025 Dala Qo'riqchisi. Barcha huquqlar himoyalangan.</p>
           </div>
         </div>
       </footer>

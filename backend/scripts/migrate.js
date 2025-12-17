@@ -35,7 +35,7 @@ async function migrate() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS trees (
         id SERIAL PRIMARY KEY,
-        tree_id INTEGER UNIQUE NOT NULL CHECK (tree_id >= 1 AND tree_id <= 3),
+        tree_id INTEGER UNIQUE NOT NULL,
         species VARCHAR(100),
         planted_year INTEGER,
         notes TEXT,
@@ -50,6 +50,37 @@ async function migrate() {
       )
     `);
     console.log('✓ trees table created');
+    
+    // Remove old constraint if exists (allow unlimited tree IDs)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        -- Drop old constraint if it exists (with old 1-3 limit)
+        IF EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'trees_tree_id_check' 
+          AND conrelid = 'trees'::regclass
+        ) THEN
+          ALTER TABLE trees DROP CONSTRAINT trees_tree_id_check;
+        END IF;
+      END $$;
+    `);
+    
+    // Add new constraint (only >= 1, no upper limit)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        -- Add new constraint if it doesn't exist
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'trees_tree_id_check' 
+          AND conrelid = 'trees'::regclass
+        ) THEN
+          ALTER TABLE trees ADD CONSTRAINT trees_tree_id_check CHECK (tree_id >= 1);
+        END IF;
+      END $$;
+    `);
+    console.log('✓ tree_id constraint updated (unlimited IDs allowed)');
     
     // Add image_url column if it doesn't exist (for existing databases)
     await pool.query(`

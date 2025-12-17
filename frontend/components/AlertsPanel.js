@@ -105,98 +105,77 @@ export default function AlertsPanel({ alerts, onAcknowledge }) {
   }
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2 sticky top-0 bg-white/95 backdrop-blur-sm py-2 z-10">
-        <span className="text-2xl sm:text-3xl">⚠️</span>
-        {translations.title}
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          {translations.title}
+        </h2>
         {unacknowledgedAlerts.length > 0 && (
-          <span className="ml-auto px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+          <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-semibold rounded-full">
             {unacknowledgedAlerts.length}
           </span>
         )}
-      </h2>
+      </div>
+      <div className="p-4 sm:p-6">
 
       {alerts.length === 0 ? (
         <div className="text-center py-8 sm:py-12">
-          <div className="text-4xl sm:text-6xl mb-4">✅</div>
-          <p className="text-gray-500 text-base sm:text-lg font-medium">{translations.noAlerts}</p>
-          <p className="text-xs sm:text-sm text-gray-400 mt-2">Barcha ogohlantirishlar hal qilingan</p>
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-xl sm:text-2xl">✅</span>
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{translations.noAlerts}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Barcha ogohlantirishlar hal qilingan</p>
         </div>
       ) : (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-3 sm:space-y-4">
           {/* Unacknowledged Alerts Section */}
           {unacknowledgedAlerts.length > 0 && (
             <div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-                <span className="text-xl sm:text-2xl">⚠️</span>
-                {translations.unacknowledged}
-                <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  {translations.unacknowledged}
+                </h3>
+                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded-full">
                   {unacknowledgedAlerts.length}
                 </span>
-              </h3>
-              <div className="space-y-3 sm:space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              </div>
+              <div className="space-y-3 max-h-[500px] overflow-y-auto">
                 {/* Show smoke alerts first (priority) */}
                 {displayedUnacknowledged
                   .filter(alert => alert.type === 'smoke')
                   .map((alert) => (
               <div
                 key={alert.id}
-                className="border-2 rounded-lg sm:rounded-xl p-3 sm:p-4 transform transition-all duration-200 hover:scale-[1.01] hover:shadow-lg bg-gradient-to-br from-red-50 via-orange-50 to-red-50 border-red-400 relative overflow-hidden animate-pulse"
-                style={{ animationDuration: '2s' }}
+                className="border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 relative overflow-hidden transition-colors"
               >
-                {/* Fire effect overlay for smoke alerts */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-5xl opacity-20 animate-bounce" style={{ animationDuration: '1s' }}>
-                    🔥
+                <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-red-100 dark:bg-red-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg sm:text-xl">🔥</span>
                   </div>
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-4xl opacity-15 animate-pulse">
-                    🔥
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                      <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {translations.tree} #{alert.tree_id}
+                      </h3>
+                      <span className="px-1.5 sm:px-2 py-0.5 bg-red-600 dark:bg-red-700 text-white text-xs font-semibold rounded">
+                        YONG'IN
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 mb-2 line-clamp-2">
+                      {alert.message}
+                    </p>
                   </div>
                 </div>
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="text-3xl sm:text-4xl p-1.5 sm:p-2 rounded-lg bg-red-200 animate-pulse flex-shrink-0">
-                        🔥
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                          <h3 className="font-bold text-base sm:text-lg text-red-900">
-                            {translations.tree} #{alert.tree_id}
-                          </h3>
-                          <span className="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg animate-pulse whitespace-nowrap">
-                            🔥 YONG'IN!
-                          </span>
-                        </div>
-                        <p className="text-xs sm:text-sm font-bold text-red-700 mb-1">
-                          {getTypeLabel(alert.type)}
-                        </p>
-                        <p className="text-xs sm:text-sm text-red-800 leading-relaxed font-medium mb-1.5 sm:mb-2 line-clamp-2">
-                          {alert.message}
-                        </p>
-                        <div className="mt-1.5 sm:mt-2 p-1.5 sm:p-2 bg-red-50 rounded-lg border border-red-200">
-                          <p className="text-xs font-semibold text-red-700 mb-0.5">{translations.reason}</p>
-                          <p className="text-xs text-red-600 leading-relaxed line-clamp-2">
-                            {getAlertReason(alert)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2 sm:pt-3 border-t border-red-300">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="text-xs text-red-600">🕐</span>
-                      <p className="text-xs font-medium text-red-700">
-                        {format(new Date(alert.created_at), 'dd.MM.yyyy HH:mm')}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleAcknowledge(alert.id)}
-                      className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-xs sm:text-sm font-medium rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-md hover:shadow-lg transition-all duration-200"
-                    >
-                      ✓ {translations.acknowledge}
-                    </button>
-                  </div>
+                <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-red-200 dark:border-red-800">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {format(new Date(alert.created_at), 'dd.MM.yyyy HH:mm')}
+                  </p>
+                  <button
+                    onClick={() => handleAcknowledge(alert.id)}
+                    className="px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 rounded-lg transition-colors"
+                  >
+                    {translations.acknowledge}
+                  </button>
                 </div>
               </div>
             ))}
@@ -207,58 +186,53 @@ export default function AlertsPanel({ alerts, onAcknowledge }) {
                   .map((alert) => (
               <div
                 key={alert.id}
-                className={`border-2 rounded-lg sm:rounded-xl p-3 sm:p-4 transform transition-all duration-200 hover:scale-[1.01] hover:shadow-lg ${
+                className={`border rounded-lg p-3 sm:p-4 transition-colors ${
                   alert.type === 'cut'
-                    ? 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300'
-                    : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-300'
+                    ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                    : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
                 }`}
               >
-              <div className="flex items-start justify-between mb-2 sm:mb-3">
-                <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className={`text-2xl sm:text-3xl p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${
-                    alert.type === 'smoke' ? 'bg-red-200' : alert.type === 'cut' ? 'bg-gray-200' : 'bg-yellow-200'
+                <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    alert.type === 'cut' 
+                      ? 'bg-gray-100 dark:bg-gray-600' 
+                      : 'bg-yellow-100 dark:bg-yellow-900/40'
                   }`}>
-                    {getTypeIcon(alert.type)}
+                    <span className="text-lg sm:text-xl">{getTypeIcon(alert.type)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                      <h3 className="font-bold text-sm sm:text-base text-gray-900">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                      <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {translations.tree} #{alert.tree_id}
                       </h3>
-                      <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-semibold bg-gradient-to-r ${getLevelColor(alert.level)} text-white shadow-sm whitespace-nowrap`}>
+                      <span className={`px-1.5 sm:px-2 py-0.5 text-xs font-semibold rounded ${
+                        alert.level === 'high' 
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                        alert.level === 'medium' 
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                        'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                      }`}>
                         {getLevelLabel(alert.level)}
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                      {getTypeLabel(alert.type)}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-1.5 sm:mb-2 line-clamp-2">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{getTypeLabel(alert.type)}</p>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
                       {alert.message}
                     </p>
-                    <div className="mt-1.5 sm:mt-2 p-1.5 sm:p-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-xs font-semibold text-gray-700 mb-0.5">{translations.reason}</p>
-                      <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
-                        {getAlertReason(alert)}
-                      </p>
-                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2 sm:pt-3 border-t border-gray-200">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-xs text-gray-500">🕐</span>
-                  <p className="text-xs font-medium text-gray-600">
+                <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {format(new Date(alert.created_at), 'dd.MM.yyyy HH:mm')}
                   </p>
+                  <button
+                    onClick={() => handleAcknowledge(alert.id)}
+                    className="px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 rounded-lg transition-colors"
+                  >
+                    {translations.acknowledge}
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleAcknowledge(alert.id)}
-                  className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-xs sm:text-sm font-medium rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-md hover:shadow-lg transition-all duration-200"
-                >
-                  ✓ {translations.acknowledge}
-                </button>
               </div>
-            </div>
           ))}
               </div>
               
@@ -266,7 +240,7 @@ export default function AlertsPanel({ alerts, onAcknowledge }) {
               {unacknowledgedAlerts.length > MAX_UNACKNOWLEDGED && (
                 <button
                   onClick={() => setShowAllUnacknowledged(!showAllUnacknowledged)}
-                  className="w-full mt-3 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                  className="w-full mt-3 px-3 py-2 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   {showAllUnacknowledged ? `↑ ${translations.showLess}` : `↓ ${translations.showMore} (${unacknowledgedAlerts.length - MAX_UNACKNOWLEDGED} ta)`}
                 </button>
@@ -274,100 +248,67 @@ export default function AlertsPanel({ alerts, onAcknowledge }) {
             </div>
           )}
 
-          {/* Acknowledged Alerts Section */}
+          {/* Acknowledged Alerts Section - Optimized with max-height to prevent pushing content down */}
           {acknowledgedAlerts.length > 0 && (
-            <div>
+            <div className="mt-4 sm:mt-6">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <span className="text-xl sm:text-2xl">✓</span>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                   {translations.acknowledged}
-                  <span className="px-2 py-0.5 bg-gray-500 text-white text-xs font-bold rounded-full">
+                  <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-full">
                     {acknowledgedAlerts.length}
                   </span>
                 </h3>
                 <button
                   onClick={() => setCollapsedAcknowledged(!collapsedAcknowledged)}
-                  className="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                 >
                   {collapsedAcknowledged ? translations.expand : translations.collapse}
                 </button>
               </div>
-              <div className={`space-y-3 sm:space-y-4 ${collapsedAcknowledged ? 'max-h-[400px] overflow-y-auto' : ''} pr-2`}>
-                {displayedAcknowledged.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className={`border-2 rounded-lg sm:rounded-xl p-3 sm:p-4 transform transition-all duration-200 hover:scale-[1.01] ${
-                      alert.type === 'smoke'
-                        ? 'bg-gradient-to-br from-red-50/50 to-orange-50/50 border-red-200'
-                        : alert.type === 'cut'
-                        ? 'bg-gradient-to-br from-gray-50/50 to-gray-100/50 border-gray-200'
-                        : 'bg-gradient-to-br from-yellow-50/50 to-orange-50/50 border-yellow-200'
-                    } opacity-75`}
-                  >
-                    <div className="flex items-start justify-between mb-2 sm:mb-3">
-                      <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
-                        <div className={`text-2xl sm:text-3xl p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${
-                          alert.type === 'smoke' ? 'bg-red-100' : alert.type === 'cut' ? 'bg-gray-100' : 'bg-yellow-100'
-                        }`}>
-                          {getTypeIcon(alert.type)}
+              {!collapsedAcknowledged && (
+                <div className="space-y-2 sm:space-y-3 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-1">
+                  {displayedAcknowledged.map((alert) => (
+                    <div
+                      key={alert.id}
+                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-start gap-2 sm:gap-3 mb-2">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg sm:text-xl">{getTypeIcon(alert.type)}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                            <h3 className="font-bold text-sm sm:text-base text-gray-700">
+                          <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                            <h3 className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                               {translations.tree} #{alert.tree_id}
                             </h3>
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-green-200 to-green-300 text-green-800 whitespace-nowrap">
+                            <span className="px-1.5 sm:px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded">
                               ✓ {translations.acknowledged}
                             </span>
                           </div>
-                          <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">
-                            {getTypeLabel(alert.type)}
-                          </p>
-                          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-1.5 sm:mb-2 line-clamp-2">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
                             {alert.message}
                           </p>
-                          <div className="mt-1.5 sm:mt-2 p-1.5 sm:p-2 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="text-xs font-semibold text-gray-700 mb-0.5">{translations.reason}</p>
-                            <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
-                              {getAlertReason(alert)}
-                            </p>
-                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col gap-1 pt-2 sm:pt-3 border-t border-gray-200">
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className="text-xs text-gray-500">🕐</span>
-                        <p className="text-xs font-medium text-gray-600">
+                      <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <p className="text-xs text-gray-500 dark:text-gray-500">
                           {format(new Date(alert.created_at), 'dd.MM.yyyy HH:mm')}
                         </p>
-                      </div>
-                      {alert.ack_at && (
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                          <span className="text-xs text-green-600">✓</span>
-                          <p className="text-xs font-medium text-green-700">
-                            {translations.acknowledgedBy} {alert.ack_by_username || 'Noma\'lum'} • {format(new Date(alert.ack_at), 'dd.MM.yyyy HH:mm')}
+                        {alert.ack_at && (
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                            ✓ {alert.ack_by_username || 'Noma\'lum'} • {format(new Date(alert.ack_at), 'dd.MM.yyyy HH:mm')}
                           </p>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Show More/Less button for acknowledged alerts */}
-              {acknowledgedAlerts.length > MAX_ACKNOWLEDGED && !collapsedAcknowledged && (
-                <button
-                  onClick={() => setShowAllAcknowledged(!showAllAcknowledged)}
-                  className="w-full mt-3 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
-                >
-                  {showAllAcknowledged ? `↑ ${translations.showLess}` : `↓ ${translations.showMore} (${acknowledgedAlerts.length - MAX_ACKNOWLEDGED} ta)`}
-                </button>
+                  ))}
+                </div>
               )}
             </div>
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -38,6 +38,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Note: Firmware files will be mounted via volume in docker-compose.prod.yml
+
 USER nextjs
 
 # Expose port

@@ -8,7 +8,7 @@ import Logo from '@/components/Logo'
 
 const translations = {
   agency: "O'rmon va yashil hududlarni ko'paytirish, cho'llanishga qarshi kurashish agentligi",
-  title: "O'rmon agentligi",
+  title: "Dala Qo'riqchisi",
   username: "Foydalanuvchi nomi",
   password: "Parol",
   loginButton: "Tizimga kirish",

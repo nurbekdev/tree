@@ -12,12 +12,12 @@ import TreeModal from '@/components/TreeModal'
 import AlertsPanel from '@/components/AlertsPanel'
 import AddTreeModal from '@/components/AddTreeModal'
 import Logo from '@/components/Logo'
-import WeatherAI from '@/components/WeatherAI'
 import TreeAI from '@/components/TreeAI'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const translations = {
   agency: "O'rmon va yashil hududlarni ko'paytirish, cho'llanishga qarshi kurashish agentligining Daraxt monitoring tizimi",
-  title: "O'rmon agentligi",
+  title: "Dala Qo'riqchisi",
   trees: "Daraxtlar",
   alerts: "Ogohlantirishlar",
   logout: "Chiqish",
@@ -401,6 +401,22 @@ export default function DashboardPage() {
     router.push('/login')
   }
 
+  const handleDeleteTree = async (tree) => {
+    if (!confirm(`Daraxt ID ${tree.tree_id} ni o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.`)) {
+      return
+    }
+
+    try {
+      await treesAPI.delete(tree.id || tree.tree_id)
+      toast.success('Daraxt muvaffaqiyatli o\'chirildi')
+      // Reload trees
+      loadTrees()
+    } catch (error) {
+      console.error('Delete error:', error)
+      toast.error(error.response?.data?.error || 'Daraxtni o\'chirishda xatolik')
+    }
+  }
+
   const handleTreeClick = async (tree) => {
     try {
       const treeData = await treesAPI.getById(tree.id || tree.tree_id)
@@ -447,56 +463,61 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600 mb-4"></div>
-          <div className="text-xl font-semibold text-gray-700">{translations.loading || 'Yuklanmoqda...'}</div>
-          <div className="text-sm text-gray-500 mt-2">Ma'lumotlar yuklanmoqda...</div>
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-gray-300 dark:border-gray-600 border-t-green-600 dark:border-t-green-500 mb-4"></div>
+          <div className="text-base font-medium text-gray-900 dark:text-gray-100">{translations.loading || 'Yuklanmoqda...'}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">Ma'lumotlar yuklanmoqda...</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-2 sm:py-4">
-          <div className="flex justify-between items-center gap-2">
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-              <div className="p-1.5 sm:p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-md flex-shrink-0">
-                <Logo size={32} className="sm:w-10 sm:h-10" />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      {/* Modern Header with Dark Mode */}
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transition-colors">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo and Title */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex-shrink-0">
+                <Logo size={40} />
               </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-base sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent leading-tight truncate">
+              <div className="min-w-0">
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                   {translations.title}
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 line-clamp-2 hidden sm:block">{translations.agency}</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+
+            {/* User Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <ThemeToggle />
               {user && (
-                <div className="text-right hidden md:block">
-                  <div className="text-sm font-medium text-gray-900">{translations.welcome}, {user.username}</div>
-                  <div className="text-xs text-gray-500 capitalize">{user.role}</div>
+                <div className="hidden md:flex items-center gap-3 pr-3 border-r border-gray-200 dark:border-gray-700">
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user.role}</div>
+                  </div>
                 </div>
               )}
               {user?.role === 'admin' && (
                 <Link
                   href="/admin"
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   title="Admin"
                 >
-                  <FiSettings className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <FiSettings className="w-4 h-4" />
                   <span className="hidden sm:inline">Admin</span>
                 </Link>
               )}
               <button
                 onClick={handleLogout}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 title="Chiqish"
               >
-                <FiLogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+                <FiLogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">{translations.logout}</span>
               </button>
             </div>
@@ -504,104 +525,162 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
-        {/* Statistics Cards */}
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-            <span className="text-xl sm:text-2xl lg:text-3xl">📊</span>
-            {translations.statistics}
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Statistics Overview - Data-Dense KPI Cards */}
+        <div className="mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
             {/* Total Trees */}
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-3xl">🌳</div>
-                <div className="text-2xl font-bold">{stats.totalTrees}</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 lg:p-6 hover:shadow-md dark:hover:shadow-lg transition-all group">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 truncate">{translations.totalTrees}</p>
+                  <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-gray-100">{stats.totalTrees}</p>
+                  <div className="mt-2 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: '100%' }}></div>
+                  </div>
+                </div>
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center justify-center ml-3 flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <span className="text-lg lg:text-2xl">🌳</span>
+                </div>
               </div>
-              <div className="text-sm font-medium opacity-90">{translations.totalTrees}</div>
             </div>
 
             {/* Online Trees */}
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-3xl">🟢</div>
-                <div className="text-2xl font-bold">{stats.onlineTrees}</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 lg:p-6 hover:shadow-md dark:hover:shadow-lg transition-all group">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 truncate">{translations.onlineTrees}</p>
+                  <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-gray-100">{stats.onlineTrees}</p>
+                  <div className="mt-2 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 rounded-full transition-all" 
+                      style={{ width: stats.totalTrees > 0 ? `${(stats.onlineTrees / stats.totalTrees) * 100}%` : '0%' }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center ml-3 flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <div className="w-2.5 h-2.5 lg:w-3 lg:h-3 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
               </div>
-              <div className="text-sm font-medium opacity-90">{translations.onlineTrees}</div>
             </div>
 
             {/* Offline Trees */}
-            <div className="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-3xl">⚫</div>
-                <div className="text-2xl font-bold">{stats.offlineTrees}</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 lg:p-6 hover:shadow-md dark:hover:shadow-lg transition-all group">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 truncate">{translations.offlineTrees}</p>
+                  <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-gray-100">{stats.offlineTrees}</p>
+                  <div className="mt-2 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gray-400 dark:bg-gray-600 rounded-full transition-all" 
+                      style={{ width: stats.totalTrees > 0 ? `${(stats.offlineTrees / stats.totalTrees) * 100}%` : '0%' }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center ml-3 flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <div className="w-2.5 h-2.5 lg:w-3 lg:h-3 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                </div>
               </div>
-              <div className="text-sm font-medium opacity-90">{translations.offlineTrees}</div>
             </div>
 
             {/* Alerts */}
-            <div className={`bg-gradient-to-br ${stats.unacknowledgedAlerts > 0 ? 'from-red-500 to-red-600' : 'from-yellow-500 to-yellow-600'} rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-3xl">⚠️</div>
-                <div className="text-2xl font-bold">{stats.unacknowledgedAlerts}</div>
+            <div className={`bg-white dark:bg-gray-800 rounded-lg border p-4 lg:p-6 hover:shadow-md dark:hover:shadow-lg transition-all group ${
+              stats.unacknowledgedAlerts > 0 
+                ? 'border-red-200 dark:border-red-800' 
+                : 'border-gray-200 dark:border-gray-700'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 truncate">{translations.unacknowledgedAlerts}</p>
+                  <p className={`text-xl lg:text-2xl font-semibold ${
+                    stats.unacknowledgedAlerts > 0 
+                      ? 'text-red-600 dark:text-red-400' 
+                      : 'text-gray-900 dark:text-gray-100'
+                  }`}>
+                    {stats.unacknowledgedAlerts}
+                  </p>
+                  <div className="mt-2 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all ${
+                        stats.unacknowledgedAlerts > 0 ? 'bg-red-500' : 'bg-yellow-400'
+                      }`}
+                      style={{ width: stats.totalAlerts > 0 ? `${(stats.unacknowledgedAlerts / stats.totalAlerts) * 100}%` : '0%' }}
+                    ></div>
+                  </div>
+                </div>
+                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-lg flex items-center justify-center ml-3 flex-shrink-0 group-hover:scale-110 transition-transform ${
+                  stats.unacknowledgedAlerts > 0 
+                    ? 'bg-red-50 dark:bg-red-900/20' 
+                    : 'bg-yellow-50 dark:bg-yellow-900/20'
+                }`}>
+                  <span className="text-base lg:text-xl">⚠️</span>
+                </div>
               </div>
-              <div className="text-sm font-medium opacity-90">{translations.unacknowledgedAlerts}</div>
             </div>
           </div>
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content - Trees */}
+          {/* Trees Section */}
           <div className="lg:col-span-2">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
-              <div className="flex justify-between items-center mb-4 sm:mb-6 gap-2">
-                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <span className="text-xl sm:text-2xl lg:text-3xl">🌲</span>
-                  {translations.trees}
-                </h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
+              {/* Section Header */}
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">{translations.trees}</h2>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-2 sm:px-4 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 text-xs sm:text-base"
+                  className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-emerald-400 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-600 rounded-lg transition-colors shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 >
-                  <FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <FiPlus className="w-4 h-4" />
                   <span className="hidden sm:inline">{translations.addTree}</span>
                   <span className="sm:hidden">Qo'shish</span>
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Trees Grid - Optimized for Data Density */}
+              <div className="p-4 sm:p-6">
                 {trees.length === 0 ? (
-                  <div className="col-span-2 text-center py-12">
-                    <div className="text-6xl mb-4">🌳</div>
-                    <p className="text-gray-500 text-lg">{translations.noData}</p>
+                  <div className="text-center py-12 sm:py-16">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl sm:text-3xl">🌳</span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{translations.noData}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Birinchi daraxtni qo'shing</p>
                     <button
                       onClick={() => setShowAddModal(true)}
-                      className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-400 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-600 rounded-lg transition-colors shadow-sm hover:shadow-md"
                     >
-                      + {translations.addTree}
+                      <FiPlus className="w-4 h-4" />
+                      {translations.addTree}
                     </button>
                   </div>
                 ) : (
-                trees.map((tree) => (
-                  <TreeCard
-                    key={tree.id || tree.tree_id}
-                    tree={tree}
-                    onClick={() => handleTreeClick(tree)}
-                    ppmThreshold={ppmThreshold}
-                  />
-                ))
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    {trees.map((tree) => (
+                      <TreeCard
+                        key={tree.id || tree.tree_id}
+                        tree={tree}
+                        onClick={() => handleTreeClick(tree)}
+                        onDelete={() => handleDeleteTree(tree)}
+                        ppmThreshold={ppmThreshold}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Sidebar - Alerts and AI */}
-          <div className="lg:sticky lg:top-4 lg:self-start space-y-4 sm:space-y-6 max-h-[calc(100vh-2rem)] overflow-y-auto pr-2">
-            <AlertsPanel alerts={alerts} onAcknowledge={loadAlerts} />
-            
-            {/* AI Analysis */}
-            <div className="space-y-4 sm:space-y-6">
-              <TreeAI />
-              <WeatherAI />
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              <AlertsPanel alerts={alerts} onAcknowledge={loadAlerts} />
+              
+              {/* AI Analysis */}
+              <div className="space-y-6">
+                <TreeAI />
+              </div>
             </div>
           </div>
         </div>

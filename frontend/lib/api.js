@@ -101,6 +101,10 @@ export const treesAPI = {
     const response = await api.put(`/api/v1/trees/${id}`, data);
     return response.data;
   },
+  delete: async (id) => {
+    const response = await api.delete(`/api/v1/trees/${id}`);
+    return response.data;
+  },
 };
 
 export const alertsAPI = {
@@ -137,6 +141,10 @@ export const adminsAPI = {
   },
   getSessions: async () => {
     const response = await api.get('/api/v1/admins/sessions');
+    return response.data;
+  },
+  deleteSession: async (sessionId) => {
+    const response = await api.delete(`/api/v1/admins/sessions/${sessionId}`);
     return response.data;
   },
 };

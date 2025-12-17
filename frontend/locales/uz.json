@@ -14,7 +14,7 @@
     "success": "Muvaffaqiyatli"
   },
   "auth": {
-    "title": "O'rmon agentligi",
+    "title": "Dala Qo'riqchisi",
     "username": "Foydalanuvchi nomi",
     "password": "Parol",
     "loginButton": "Tizimga kirish",
@@ -22,7 +22,7 @@
     "loginRequired": "Tizimga kirish talab qilinadi"
   },
   "dashboard": {
-    "title": "O'rmon agentligi",
+    "title": "Dala Qo'riqchisi",
     "trees": "Daraxtlar",
     "alerts": "Ogohlantirishlar",
     "lastSeen": "Oxirgi ko'rilgan",

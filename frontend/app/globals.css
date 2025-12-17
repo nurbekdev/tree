@@ -21,8 +21,31 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f3f4f6;
+  background-color: #f9fafb;
   color: #111827;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Dark mode body styles */
+.dark body {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+/* Modern Design System */
+:root {
+  --color-primary: #16a34a;
+  --color-primary-hover: #15803d;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
 }
 
 /* Input va textarea uchun to'liq ko'rinish */
@@ -40,6 +63,19 @@ select {
   width: 100% !important;
   font-size: 1rem !important;
   line-height: 1.5 !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Dark mode inputs */
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark textarea,
+.dark select {
+  color: #f9fafb !important;
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
 }
 
 input[type="text"]:focus,
@@ -53,15 +89,30 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
 }
 
+.dark input[type="text"]:focus,
+.dark input[type="number"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2) !important;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #9ca3af !important;
   opacity: 1 !important;
 }
 
-/* Text ko'rinishi uchun */
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Text ko'rinishi uchun - removed !important to allow dark mode */
 p, span, div, h1, h2, h3, h4, h5, h6, label {
-  color: #111827 !important;
+  transition: color 0.2s ease;
 }
 
 /* Animatsiyalar */
@@ -260,5 +311,130 @@ p, span, div, h1, h2, h3, h4, h5, h6, label {
 
 .progress-animate {
   animation: progress 2s ease-out forwards;
+}
+
+/* Tree Age Score Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), 0 0 40px rgba(34, 197, 94, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.6), 0 0 60px rgba(34, 197, 94, 0.3);
+  }
+}
+
+@keyframes pulse-glow-red {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.7), 0 0 70px rgba(239, 68, 68, 0.4);
+  }
+}
+
+@keyframes pulse-glow-yellow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.4), 0 0 40px rgba(234, 179, 8, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(234, 179, 8, 0.6), 0 0 60px rgba(234, 179, 8, 0.3);
+  }
+}
+
+@keyframes rotate-ring {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-glow-green {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow-red {
+  animation: pulse-glow-red 2s ease-in-out infinite;
+}
+
+.animate-pulse-glow-yellow {
+  animation: pulse-glow-yellow 3s ease-in-out infinite;
+}
+
+.animate-rotate-ring {
+  animation: rotate-ring 20s linear infinite;
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+.animate-pulse-warning {
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+/* WHOOP-style Starry Background Animation */
+@keyframes starry-twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes starry-float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  50% {
+    transform: translateY(-5px) translateX(-5px);
+  }
+  75% {
+    transform: translateY(-15px) translateX(3px);
+  }
+}
+
+/* Removed starry-bg class - using clean gradients instead for better number visibility */
+
+/* Gradient pulse for healthspan */
+@keyframes gradient-pulse {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.gradient-pulse {
+  background-size: 200% 200%;
+  animation: gradient-pulse 4s ease infinite;
 }
 

@@ -128,7 +128,6 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      tree_id,
       species,
       planted_year,
       notes,
@@ -138,34 +137,52 @@ router.post('/', async (req, res) => {
       image_url
     } = req.body;
 
-    if (!tree_id || tree_id < 1 || tree_id > 3) {
-      return res.status(400).json({ error: 'tree_id must be 1, 2, or 3' });
-    }
-
-    // Check if tree_id already exists
-    const checkResult = await pool.query(
-      'SELECT id FROM trees WHERE tree_id = $1',
-      [tree_id]
+    // Auto-generate tree_id (find next available ID)
+    const existingTrees = await pool.query(
+      'SELECT tree_id FROM trees ORDER BY tree_id'
     );
-
-    if (checkResult.rows.length > 0) {
-      return res.status(400).json({ error: 'Tree with this ID already exists' });
+    
+    const usedIds = existingTrees.rows.map(row => row.tree_id);
+    let nextTreeId = 1;
+    
+    // Find first available ID
+    while (usedIds.includes(nextTreeId)) {
+      nextTreeId++;
     }
 
-    // Create new tree
+    // Create new tree with auto-generated ID
     const result = await pool.query(
       `INSERT INTO trees (
         tree_id, species, planted_year, notes, 
         latitude, longitude, owner_contact, image_url
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
-      [tree_id, species, planted_year, notes, latitude, longitude, owner_contact, image_url]
+      [nextTreeId, species, planted_year, notes, latitude, longitude, owner_contact, image_url]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating tree:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    
+    // Check if it's a constraint violation
+    if (error.code === '23514') { // Check constraint violation
+      return res.status(400).json({ 
+        error: `Database constraint error: ${error.message}` 
+      });
+    }
+    
+    // Check if it's a unique constraint violation
+    if (error.code === '23505') { // Unique constraint violation
+      return res.status(400).json({ 
+        error: 'Tree with this ID already exists' 
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message,
+      code: error.code
+    });
   }
 });
 
@@ -212,6 +229,43 @@ router.put('/:id', async (req, res) => {
     res.json(updateResult.rows[0]);
   } catch (error) {
     console.error('Error updating tree:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/v1/trees/:id - Delete tree
+router.delete('/:id', async (req, res) => {
+  try {
+    const treeId = parseInt(req.params.id);
+
+    // Check if tree exists
+    const checkResult = await pool.query(
+      'SELECT id, tree_id FROM trees WHERE id = $1 OR tree_id = $1',
+      [treeId]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Tree not found' });
+    }
+
+    const tree = checkResult.rows[0];
+
+    // Delete related data first (cascade delete should handle this, but explicit is better)
+    // Delete telemetry data
+    await pool.query('DELETE FROM telemetry WHERE tree_id = $1', [tree.tree_id]);
+    
+    // Delete alerts
+    await pool.query('DELETE FROM alerts WHERE tree_id = $1', [tree.tree_id]);
+
+    // Delete tree
+    await pool.query('DELETE FROM trees WHERE id = $1', [tree.id]);
+
+    res.status(200).json({ 
+      message: 'Tree deleted successfully',
+      deleted_tree_id: tree.tree_id
+    });
+  } catch (error) {
+    console.error('Error deleting tree:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

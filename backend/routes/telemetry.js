@@ -27,9 +27,9 @@ router.post('/', async (req, res) => {
       status
     } = req.body;
 
-    // Validate required fields
-    if (!tree_id || tree_id < 1 || tree_id > 3) {
-      return res.status(400).json({ error: 'Invalid tree_id (must be 1-3)' });
+    // Validate required fields (allow any positive tree_id)
+    if (!tree_id || tree_id < 1) {
+      return res.status(400).json({ error: 'Invalid tree_id (must be >= 1)' });
     }
 
     // Handle timestamp - use current time if not provided or invalid

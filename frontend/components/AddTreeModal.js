@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { treesAPI } from '@/lib/api'
 import toast from 'react-hot-toast'
 import dynamic from 'next/dynamic'
+import { FiDownload } from 'react-icons/fi'
 
 // Dynamically import Leaflet map to avoid SSR issues
 const MapComponent = dynamic(() => import('./MapComponent'), { 
@@ -28,7 +29,6 @@ const translations = {
 
 export default function AddTreeModal({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
-    tree_id: '',
     species: '',
     planted_year: '',
     notes: '',
@@ -40,12 +40,34 @@ export default function AddTreeModal({ onClose, onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [imagePreview, setImagePreview] = useState(null)
   const [mapPosition, setMapPosition] = useState([41.3111, 69.2797]) // Tashkent default
+  const [createdTree, setCreatedTree] = useState(null) // Store created tree for firmware download
+  const [autoTreeId, setAutoTreeId] = useState(null) // Auto-generated tree ID
+
+  // Get next available tree ID on mount
+  useEffect(() => {
+    const fetchNextTreeId = async () => {
+      try {
+        const trees = await treesAPI.getAll()
+        const usedIds = trees.map(t => t.tree_id).sort((a, b) => a - b)
+        let nextId = 1
+        while (usedIds.includes(nextId)) {
+          nextId++
+        }
+        setAutoTreeId(nextId)
+      } catch (error) {
+        console.error('Error fetching trees:', error)
+        setAutoTreeId(1) // Fallback to 1
+      }
+    }
+    fetchNextTreeId()
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!formData.tree_id || formData.tree_id < 1 || formData.tree_id > 3) {
-      toast.error('Daraxt ID 1, 2 yoki 3 bo\'lishi kerak')
+    // Validate required fields
+    if (!formData.species || !formData.planted_year) {
+      toast.error('Turi va ekilgan yil majburiy maydonlar')
       return
     }
 
@@ -95,18 +117,43 @@ export default function AddTreeModal({ onClose, onSuccess }) {
         })
       }
       
-      await treesAPI.create(dataToSave)
-      toast.success('Daraxt muvaffaqiyatli qo\'shildi')
+      const createdTree = await treesAPI.create(dataToSave)
+      setCreatedTree(createdTree) // Store for firmware download
+      toast.success('Daraxt muvaffaqiyatli qo\'shildi! Endi firmware kodlarini yuklab oling.')
       if (onSuccess) {
         onSuccess()
       }
-      onClose()
+      // Don't close modal yet - show firmware download section
     } catch (error) {
       console.error('Create error:', error)
       const errorMsg = error.response?.data?.error || error.message || 'Daraxt qo\'shishda xatolik'
       toast.error(errorMsg)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const downloadFirmware = async (type, treeId) => {
+    try {
+      const response = await fetch(`/api/firmware/${type}?tree_id=${treeId}`)
+      if (!response.ok) {
+        throw new Error('Firmware yuklashda xatolik')
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = type === 'base_station' ? 'base_station.ino' : `transmitter_tree_${treeId}.ino`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast.success(`${type === 'base_station' ? 'Base Station' : 'Transmitter'} firmware yuklandi`)
+    } catch (error) {
+      console.error('Download error:', error)
+      toast.error('Firmware yuklashda xatolik')
     }
   }
 
@@ -178,21 +225,19 @@ export default function AddTreeModal({ onClose, onSuccess }) {
               </label>
               <input
                 type="number"
-                min="1"
-                max="3"
-                value={formData.tree_id}
-                onChange={(e) =>
-                  setFormData({ ...formData, tree_id: parseInt(e.target.value) || '' })
-                }
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white"
-                placeholder="1, 2 yoki 3"
+                value={autoTreeId || ''}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-gray-100 cursor-not-allowed"
+                placeholder="Avtomatik generatsiya qilinadi..."
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Daraxt ID avtomatik ravishda beriladi
+              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations.species}
+                {translations.species} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -200,6 +245,7 @@ export default function AddTreeModal({ onClose, onSuccess }) {
                 onChange={(e) =>
                   setFormData({ ...formData, species: e.target.value })
                 }
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white"
                 placeholder="Masalan: Olma, Nok, etc."
               />
@@ -248,7 +294,7 @@ export default function AddTreeModal({ onClose, onSuccess }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations.plantedYear}
+                {translations.plantedYear} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -256,6 +302,9 @@ export default function AddTreeModal({ onClose, onSuccess }) {
                 onChange={(e) =>
                   setFormData({ ...formData, planted_year: e.target.value })
                 }
+                required
+                min="1900"
+                max={new Date().getFullYear()}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white"
                 placeholder="Masalan: 2020"
               />
@@ -324,7 +373,7 @@ export default function AddTreeModal({ onClose, onSuccess }) {
                       setMapPosition([lat, lng])
                     }}
                     editable={true}
-                    treeId={parseInt(formData.tree_id) || 1}
+                    treeId={autoTreeId || 1}
                   />
                 </div>
                 <p className="text-xs text-gray-500">
@@ -348,22 +397,93 @@ export default function AddTreeModal({ onClose, onSuccess }) {
               />
             </div>
 
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {loading ? 'Saqlanmoqda...' : translations.save}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 font-medium"
-              >
-                {translations.cancel}
-              </button>
-            </div>
+            {!createdTree ? (
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {loading ? 'Saqlanmoqda...' : translations.save}
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 font-medium"
+                >
+                  {translations.cancel}
+                </button>
+              </div>
+            ) : (
+              <div className="pt-4 space-y-4">
+                <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-green-800 mb-2">
+                    ✅ Daraxt muvaffaqiyatli qo'shildi!
+                  </h3>
+                  <p className="text-sm text-green-700 mb-4">
+                    Daraxt ID: <strong>{createdTree.tree_id}</strong>
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-900">Hardware kodlarini yuklab oling:</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => downloadFirmware('base_station', createdTree.tree_id)}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        <FiDownload className="w-5 h-5" />
+                        Base Station Firmware
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => downloadFirmware('transmitter', createdTree.tree_id)}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium"
+                      >
+                        <FiDownload className="w-5 h-5" />
+                        Transmitter Firmware (ID: {createdTree.tree_id})
+                      </button>
+                    </div>
+                    
+                    <p className="text-xs text-gray-600 mt-3">
+                      💡 <strong>Base Station</strong> - bitta marta yuklab oling (barcha daraxtlar uchun bir xil)<br/>
+                      💡 <strong>Transmitter</strong> - har bir daraxt uchun alohida yuklab oling (TREE_ID avtomatik o'rnatiladi)
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatedTree(null)
+                      setFormData({
+                        species: '',
+                        planted_year: '',
+                        notes: '',
+                        latitude: '',
+                        longitude: '',
+                        owner_contact: '',
+                        image_url: '',
+                      })
+                      setImagePreview(null)
+                    }}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+                  >
+                    Yana daraxt qo'shish
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 font-medium"
+                  >
+                    {translations.close}
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
         </div>
       </div>

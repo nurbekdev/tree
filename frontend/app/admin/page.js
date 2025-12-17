@@ -74,6 +74,9 @@ const translations = {
   sessionsTableNotExists: 'User sessions jadvali mavjud emas. Migration ishga tushiring.',
   sessionsError: 'Sessiyalarni yuklashda xatolik',
   refreshSessions: 'Yangilash',
+  deleteSession: 'O\'chirish',
+  deleteSessionConfirm: 'Bu sessiyani o\'chirishni xohlaysizmi?',
+  sessionDeleted: 'Sessiya muvaffaqiyatli o\'chirildi',
 }
 
 export default function AdminPage() {
@@ -434,6 +437,22 @@ export default function AdminPage() {
     }
   }
 
+  const handleDeleteSession = async (sessionId) => {
+    if (!confirm(translations.deleteSessionConfirm)) {
+      return
+    }
+
+    try {
+      await adminsAPI.deleteSession(sessionId)
+      toast.success(translations.sessionDeleted)
+      loadUserSessions(false) // Reload sessions without showing loading
+    } catch (error) {
+      console.error('Error deleting session:', error)
+      const errorMessage = error.response?.data?.error || translations.error
+      toast.error(errorMessage)
+    }
+  }
+
   const loadUserSessions = async (showLoading = true) => {
     if (showLoading) {
       setSessionsLoading(true)
@@ -451,23 +470,43 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Error loading user sessions:', error)
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      })
       
       // Check if it's a 404 or table doesn't exist
       if (error.response?.status === 404) {
-        setSessionsError(translations.sessionsTableNotExists)
+        const errorData = error.response?.data
+        if (errorData?.error?.includes('does not exist') || errorData?.hint) {
+          setSessionsError(translations.sessionsTableNotExists)
+        } else {
+          setSessionsError(translations.sessionsError + ': ' + (errorData?.error || 'Not found'))
+        }
         setUserSessions([])
       } else if (error.response?.status === 500) {
         // Server error - might be table doesn't exist
-        const errorMessage = error.response?.data?.error || error.message
-        if (errorMessage?.includes('does not exist') || errorMessage?.includes('42P01')) {
+        const errorData = error.response?.data
+        const errorMessage = errorData?.error || errorData?.message || error.message
+        if (errorMessage?.includes('does not exist') || errorMessage?.includes('42P01') || errorMessage?.includes('42703')) {
           setSessionsError(translations.sessionsTableNotExists)
         } else {
-          setSessionsError(translations.sessionsError)
+          setSessionsError(translations.sessionsError + ': ' + errorMessage)
         }
+        setUserSessions([])
+      } else if (error.response) {
+        // Other HTTP errors
+        const errorData = error.response?.data
+        setSessionsError(translations.sessionsError + ': ' + (errorData?.error || errorData?.message || `HTTP ${error.response.status}`))
+        setUserSessions([])
+      } else if (error.request) {
+        // Network error
+        setSessionsError(translations.sessionsError + ': Serverga ulanib bo\'lmadi')
         setUserSessions([])
       } else {
         // Other errors
-        setSessionsError(translations.sessionsError)
+        setSessionsError(translations.sessionsError + ': ' + error.message)
         setUserSessions([])
       }
     } finally {
@@ -752,9 +791,21 @@ export default function AdminPage() {
                       <p className="text-sm font-medium text-yellow-800 mb-1">
                         {sessionsError}
                       </p>
-                      <p className="text-xs text-yellow-700">
-                        Migration ishga tushirish uchun: <code className="bg-yellow-100 px-2 py-1 rounded">npm run migrate</code>
-                      </p>
+                      <div className="text-xs text-yellow-700 space-y-2">
+                        <p className="font-semibold mb-2">Migration ishga tushirish:</p>
+                        <div className="space-y-1">
+                          <p>Docker container ichida:</p>
+                          <code className="block bg-yellow-100 px-2 py-1 rounded text-xs font-mono">
+                            docker exec tree-monitor-api npm run migrate
+                          </code>
+                        </div>
+                        <div className="space-y-1 mt-2">
+                          <p>Yoki backend papkasida:</p>
+                          <code className="block bg-yellow-100 px-2 py-1 rounded text-xs font-mono">
+                            cd backend && npm run migrate
+                          </code>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -792,6 +843,9 @@ export default function AdminPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {translations.lastActivity}
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amallar
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -821,6 +875,15 @@ export default function AdminPage() {
                           {session.last_activity 
                             ? format(new Date(session.last_activity), 'dd.MM.yyyy HH:mm:ss')
                             : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <button
+                            onClick={() => handleDeleteSession(session.id)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition-colors"
+                            title={translations.deleteSession}
+                          >
+                            🗑️
+                          </button>
                         </td>
                       </tr>
                     ))}

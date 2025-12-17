@@ -37,6 +37,97 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/v1/admins/sessions - Get all user sessions
+// IMPORTANT: This must be defined BEFORE /:id route to avoid route conflicts
+router.get('/sessions', async (req, res) => {
+  try {
+    // First check if table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_sessions'
+      )
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      return res.status(404).json({ 
+        error: 'User sessions table does not exist',
+        hint: 'Please run migration: npm run migrate'
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        s.id,
+        s.user_id,
+        u.username,
+        s.ip_address,
+        s.user_agent,
+        s.login_time,
+        s.last_activity,
+        s.is_active
+       FROM user_sessions s
+       JOIN users u ON s.user_id = u.id
+       ORDER BY s.login_time DESC
+       LIMIT 100`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching user sessions:', error);
+    
+    // If table doesn't exist, return 404 with helpful message
+    if (error.code === '42P01') {
+      return res.status(404).json({ 
+        error: 'User sessions table does not exist',
+        hint: 'Please run migration: npm run migrate'
+      });
+    }
+    
+    // If column doesn't exist (partial migration)
+    if (error.code === '42703') {
+      return res.status(500).json({ 
+        error: 'User sessions table structure is incomplete',
+        hint: 'Please run migration: npm run migrate'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+// DELETE /api/v1/admins/sessions/:id - Delete a user session
+router.delete('/sessions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if session exists
+    const sessionCheck = await pool.query(
+      'SELECT id FROM user_sessions WHERE id = $1',
+      [id]
+    );
+
+    if (sessionCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Delete session
+    await pool.query('DELETE FROM user_sessions WHERE id = $1', [id]);
+
+    res.json({ message: 'Session deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
 // GET /api/v1/admins/:id - Get admin by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -211,68 +302,6 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting admin:', error);
     res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// GET /api/v1/admins/sessions - Get all user sessions
-router.get('/sessions', async (req, res) => {
-  try {
-    // First check if table exists
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'user_sessions'
-      )
-    `);
-    
-    if (!tableCheck.rows[0].exists) {
-      return res.status(404).json({ 
-        error: 'User sessions table does not exist',
-        hint: 'Please run migration: npm run migrate'
-      });
-    }
-
-    const result = await pool.query(
-      `SELECT 
-        s.id,
-        s.user_id,
-        u.username,
-        s.ip_address,
-        s.user_agent,
-        s.login_time,
-        s.last_activity,
-        s.is_active
-       FROM user_sessions s
-       JOIN users u ON s.user_id = u.id
-       ORDER BY s.login_time DESC
-       LIMIT 100`
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching user sessions:', error);
-    
-    // If table doesn't exist, return 404 with helpful message
-    if (error.code === '42P01') {
-      return res.status(404).json({ 
-        error: 'User sessions table does not exist',
-        hint: 'Please run migration: npm run migrate'
-      });
-    }
-    
-    // If column doesn't exist (partial migration)
-    if (error.code === '42703') {
-      return res.status(500).json({ 
-        error: 'User sessions table structure is incomplete',
-        hint: 'Please run migration: npm run migrate'
-      });
-    }
-    
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: error.message 
-    });
   }
 });
 
