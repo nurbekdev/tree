@@ -368,10 +368,14 @@ export default function AdminPage() {
       console.error('Error loading ESP8266 config:', error)
       // Set default config if API fails
       setEsp8266Config({
-        backend_url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+        backend_url: typeof window !== 'undefined' 
+          ? window.location.origin 
+          : process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app',
         api_key: 'Not available',
         api_key_preview: 'Not available',
-        telemetry_endpoint: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/v1/telemetry`,
+        telemetry_endpoint: typeof window !== 'undefined'
+          ? `${window.location.origin}/api/v1/telemetry`
+          : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app'}/api/v1/telemetry`,
         header_name: 'X-API-Key'
       })
     }

@@ -37,6 +37,8 @@ const corsOptions = {
     // In production, check against allowed origins
     const allowedOrigins = [
       process.env.FRONTEND_URL,
+      'https://nextree.app',
+      'http://nextree.app',
       'http://localhost:3000',
       'http://localhost:3001',
       'http://172.20.10.3:3001',
@@ -52,10 +54,10 @@ const corsOptions = {
       // Log for debugging
       console.log('CORS: Origin not in allowed list:', origin, 'Allowed:', allowedOrigins);
       // In production, be more permissive - allow same-origin requests
-      if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('64.225.20.211') || origin.includes('209.38.61.156'))) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+      if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('nextree.app') || origin.includes('64.225.20.211') || origin.includes('209.38.61.156'))) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
       }
     }
   },
@@ -82,6 +84,8 @@ const io = new Server(server, {
       // In production, check against allowed origins
       const allowedOrigins = [
         process.env.FRONTEND_URL,
+        'https://nextree.app',
+        'http://nextree.app',
         'http://localhost:3000',
         'http://localhost:3001',
         'http://172.20.10.3:3001',
@@ -96,11 +100,11 @@ const io = new Server(server, {
       } else {
         console.warn('Socket.IO: Origin not allowed:', origin, 'Allowed origins:', allowedOrigins);
         // In production, be more permissive - allow same-origin requests
-        if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('64.225.20.211') || origin.includes('209.38.61.156'))) {
+        if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('nextree.app') || origin.includes('64.225.20.211') || origin.includes('209.38.61.156'))) {
           console.log('Socket.IO: Allowing origin based on domain match:', origin);
           callback(null, true);
         } else {
-        callback(new Error('Not allowed by CORS'));
+          callback(new Error('Not allowed by CORS'));
         }
       }
     },

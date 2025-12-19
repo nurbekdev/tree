@@ -81,10 +81,10 @@ export default function PublicTreePage() {
         setLoading(true)
         setError(null)
         
-        // Get API URL
+        // Get API URL - use relative URL (Nginx proxies /api/* to backend)
         const apiUrl = typeof window !== 'undefined' 
-          ? (process.env.NEXT_PUBLIC_API_URL || window.location.origin)
-          : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+          ? window.location.origin
+          : process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app'
         
         const response = await fetch(`${apiUrl}/api/v1/public/trees/${treeId}`)
         

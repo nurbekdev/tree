@@ -3,7 +3,10 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone', // Enable standalone output for Docker
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+    // Note: In production, API calls use relative URLs (window.location.origin)
+    // Nginx proxies /api/* to backend, so NEXT_PUBLIC_API_URL is not needed
+    // Only set if you need a different API domain
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app',
   },
   // Optimize build performance
   swcMinify: true,
