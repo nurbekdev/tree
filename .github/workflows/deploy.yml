@@ -165,31 +165,31 @@ jobs:
           echo "Building containers with cache..."
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
-          export BUILDKIT_PROGRESS=plain
+          export COMPOSE_BAKE=true
           export COMPOSE_HTTP_TIMEOUT=1800
           export DOCKER_CLIENT_TIMEOUT=1800
           
-          # Build backend and frontend in parallel (if possible) or sequentially with cache
+          # Build backend and frontend sequentially with cache
           echo "Building backend..."
-          timeout 600 docker compose -f docker-compose.prod.yml build backend --progress=plain || {
+          docker compose -f docker-compose.prod.yml --progress=plain build backend || {
             echo "Build with cache failed, trying without cache..."
-            timeout 600 docker compose -f docker-compose.prod.yml build backend --no-cache --progress=plain
+            docker compose -f docker-compose.prod.yml --progress=plain build --no-cache backend
           }
           
           echo "Building frontend (this may take 5-10 minutes)..."
-          timeout 900 docker compose -f docker-compose.prod.yml build frontend --progress=plain || {
+          docker compose -f docker-compose.prod.yml --progress=plain build frontend || {
             echo "Build with cache failed, trying without cache..."
-            timeout 1200 docker compose -f docker-compose.prod.yml build frontend --no-cache --progress=plain
+            docker compose -f docker-compose.prod.yml --progress=plain build --no-cache frontend
           }
           
           echo "Starting containers..."
-          docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+          docker compose -f docker-compose.prod.yml --progress=plain up -d --force-recreate --remove-orphans
           
           echo "Waiting for services to be ready..."
           sleep 3
           
           echo "Checking service status..."
-          docker compose -f docker-compose.prod.yml ps
+          docker compose -f docker-compose.prod.yml --progress=plain ps
           
           echo "Fixing Nginx configuration..."
           if [ -f ../scripts/fix-nginx.sh ]; then
