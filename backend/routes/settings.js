@@ -42,10 +42,27 @@ router.get('/', async (req, res) => {
 // This must come before /:key route to avoid matching "esp8266" as a key
 router.get('/esp8266/config', async (req, res) => {
   try {
-    // Get backend URL from environment or construct from request
-    const backendUrl = process.env.BACKEND_URL || 
-                      process.env.API_URL || 
-                      `${req.protocol}://${req.get('host')}`;
+    // ESP8266 devices need direct IP address (not domain name) and HTTP (not HTTPS)
+    // ESP8266 connects through Nginx (port 80), not directly to backend (port 3000)
+    // Priority: ESP8266_BACKEND_URL > BACKEND_URL > API_URL > server IP
+    let backendUrl = process.env.ESP8266_BACKEND_URL || 
+                     process.env.BACKEND_URL || 
+                     process.env.API_URL;
+    
+    // If no environment variable set, use server's public IP (port 80 via Nginx)
+    if (!backendUrl) {
+      // Default to production server IP for ESP8266 (no port, uses port 80)
+      backendUrl = 'http://64.225.20.211';
+    }
+    
+    // Ensure it's HTTP (not HTTPS) and remove port 3000 (use port 80 via Nginx)
+    if (backendUrl.startsWith('https://')) {
+      backendUrl = backendUrl.replace('https://', 'http://');
+    }
+    // Remove port 3000 if present (ESP8266 uses Nginx on port 80)
+    if (backendUrl.includes(':3000')) {
+      backendUrl = backendUrl.replace(':3000', '');
+    }
     
     // Get API key from environment (only first 10 chars for display, full key for copy)
     const apiKey = process.env.API_KEY || '';

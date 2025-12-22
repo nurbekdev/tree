@@ -20,11 +20,17 @@ const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
 // Backend API Configuration
-// NOTE: Use your computer's local IP address (not localhost!)
+// IMPORTANT: ESP8266 devices use HTTP only (not HTTPS) and connect directly to backend
+// ESP8266 cannot use domain names like "nextree.app" - must use IP address
+// For production server: Use server's public IP address
+// For local development: Use your computer's local IP (e.g., http://192.168.x.x:3000)
 // Find your IP: On Mac/Linux: ifconfig | grep "inet " | grep -v 127.0.0.1
 //                On Windows: ipconfig (look for IPv4 Address)
-// IMPORTANT: Update this IP when your network changes!
-const char* BACKEND_URL = "http://192.168.3.130:3000";
+// ESP8266 cannot use domain names - must use IP address!
+// ESP8266 connects through Nginx (port 80), not directly to backend
+// Nginx proxies /api/* requests to backend automatically
+// Use server's public IP address without port (defaults to port 80)
+const char* BACKEND_URL = "http://64.225.20.211";  // Production server IP (port 80 via Nginx)
 const char* API_KEY = "26a826cbadeb499a604e69cbb34c3d6b84edb23e2bacc282732db8f576255af0";  // Must match backend .env file
 
 // nRF24L01 Pin Configuration
@@ -1047,11 +1053,22 @@ bool sendToBackend(String payload) {
     Serial.println(httpCode);
     
     // Additional diagnostics
+    Serial.println("\n=== Diagnostic Information ===");
     Serial.print("Wi-Fi status: ");
     Serial.println(WiFi.status());
+    Serial.print("Wi-Fi SSID: ");
+    Serial.println(WiFi.SSID());
+    Serial.print("Wi-Fi IP: ");
+    Serial.println(WiFi.localIP());
     Serial.print("Wi-Fi RSSI: ");
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
+    Serial.print("Backend URL: ");
+    Serial.println(url);
+    Serial.print("API Key (first 10 chars): ");
+    String apiKeyPreview = String(API_KEY).substring(0, 10);
+    Serial.println(apiKeyPreview + "...");
+    Serial.println("===============================\n");
   }
   
   http.end();

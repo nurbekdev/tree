@@ -30,7 +30,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       PORT: 3000
     ports:
-      - "127.0.0.1:3000:3000"  # Only accessible from localhost (Nginx will proxy)
+      # Backend is accessed through Nginx (port 80), not directly
+      # ESP8266 devices connect via Nginx: http://64.225.20.211/api/v1/telemetry
+      # Nginx proxies /api/* requests to backend on port 3000
+      - "127.0.0.1:3000:3000"  # Only accessible from localhost (Nginx proxy)
     depends_on:
       postgres:
         condition: service_healthy
