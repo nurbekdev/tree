@@ -16,8 +16,8 @@
 
 // ==================== CONFIGURATION ====================
 // Wi-Fi Configuration
-const char* WIFI_SSID = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID = "Nurbek’s iPhone";
+const char* WIFI_PASSWORD = "password4nur123";
 
 // Backend API Configuration
 // IMPORTANT: ESP8266 devices use HTTP only (not HTTPS) and connect directly to backend

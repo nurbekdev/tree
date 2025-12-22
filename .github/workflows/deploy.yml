@@ -10,324 +10,119 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Setup SSH
-        continue-on-error: true
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          
-          # Save SSH key
           echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          
-          # Add server to known hosts
-          echo "Adding server to known hosts..."
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 644 ~/.ssh/known_hosts
-          
-          # Test basic connectivity first
-          echo "Testing server connectivity..."
-          if ping -c 3 -W 5 ${{ secrets.SERVER_HOST }} > /dev/null 2>&1; then
-            echo "✓ Server is reachable via ping"
-          else
-            echo "⚠️  Server is not reachable via ping (may be firewall blocking ICMP)"
-          fi
-          
-          # Test port 22 connectivity
-          echo "Testing SSH port (22) connectivity..."
-          if timeout 5 bash -c "echo > /dev/tcp/${{ secrets.SERVER_HOST }}/22" 2>/dev/null; then
-            echo "✓ Port 22 is open"
-          else
-            echo "❌ Port 22 is not accessible"
-            echo "This could mean:"
-            echo "  - Firewall is blocking port 22"
-            echo "  - SSH service is not running"
-            echo "  - Server is down"
-          fi
-          
-          # Test SSH connection with retry
-          echo "Testing SSH connection..."
-          MAX_RETRIES=3
-          RETRY_COUNT=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if ssh -i ~/.ssh/id_rsa \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-              -o ConnectTimeout=60 \
-              -o ServerAliveInterval=15 \
-              -o ServerAliveCountMax=5 \
-              -o TCPKeepAlive=yes \
-            -o BatchMode=yes \
-              -o LogLevel=ERROR \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              echo "SSH connection successful" 2>&1; then
-              echo "✓ SSH connection established"
-              exit 0
-            else
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              echo "SSH connection attempt $RETRY_COUNT/$MAX_RETRIES failed"
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "Waiting 10 seconds before retry..."
-                sleep 10
-              fi
-            fi
-          done
-          
-          echo "⚠️  SSH connection failed after $MAX_RETRIES attempts"
-          echo "This is a warning, deployment will continue if server is accessible via other means"
-          echo ""
-          echo "Troubleshooting steps:"
-          echo "1. Check if server is running: ping ${{ secrets.SERVER_HOST }}"
-          echo "2. Check if SSH service is running on server"
-          echo "3. Check server firewall: ufw status"
-          echo "4. Verify SSH key in GitHub Secrets"
-          echo "5. Try connecting manually: ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}"
       
       - name: Deploy to server
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        timeout-minutes: 60
+        timeout-minutes: 12
         run: |
           SERVER_PATH="${{ secrets.SERVER_PATH }}"
           
-          # Execute deployment directly via SSH with heredoc
           ssh -i ~/.ssh/id_rsa \
             -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -o ConnectTimeout=60 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=20 \
-            -o TCPKeepAlive=yes \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=3 \
             -o BatchMode=yes \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "cd '$SERVER_PATH' && bash -s" << 'DEPLOY_SCRIPT'
-            set -e
-            echo "=========================================="
-            echo "Starting deployment..."
-            echo "=========================================="
-            
-            pwd
-            
-            echo "Pulling latest code..."
-            git fetch origin
-            git reset --hard origin/main || git reset --hard origin/master
-            
-            echo "Deploying backend..."
-            cd backend
-            
-            echo "Stopping and removing existing containers..."
-            docker compose -f docker-compose.prod.yml down --remove-orphans || true
-            
-            echo "Removing any existing containers with same names..."
-            docker rm -f tree-monitor-api-prod tree-monitor-frontend-prod tree-monitor-db-prod 2>/dev/null || true
-            
-            echo "Cleaning up Docker networks..."
-            docker network prune -f || true
-            
-            echo "Waiting for ports to be released..."
-            sleep 3
-            
-            echo "Checking for processes using ports 3000 and 3001..."
-            lsof -ti:3000 | xargs -r kill -9 2>/dev/null || echo "No process on port 3000"
-            lsof -ti:3001 | xargs -r kill -9 2>/dev/null || echo "No process on port 3001"
-            
-            echo "Checking for Docker containers using ports..."
-            for container_id in $(docker ps -a --format "{{.ID}}"); do
-                if docker port "$container_id" 2>/dev/null | grep -E ":(3000|3001)" > /dev/null; then
-                    echo "Removing container $container_id using port 3000 or 3001..."
-                    docker rm -f "$container_id" 2>/dev/null || true
-                fi
-            done
-            
-            echo "Waiting for ports to be fully released..."
-            sleep 2
-            
-            echo "Verifying ports are free..."
-            if lsof -ti:3000 > /dev/null 2>&1; then
-                echo "⚠️  Port 3000 is still in use, trying to free it..."
-                lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
-                sleep 2
-            fi
-            if lsof -ti:3001 > /dev/null 2>&1; then
-                echo "⚠️  Port 3001 is still in use, trying to free it..."
-                lsof -ti:3001 | xargs -r kill -9 2>/dev/null || true
-                sleep 2
-            fi
-            
-            echo "Cleaning up Docker to free space..."
-            docker container prune -f || true
-            docker image prune -af || true
-            docker system prune -f || true
-            docker builder prune -af --filter "until=24h" || true
-            
-          echo "Building new containers..."
-          export COMPOSE_HTTP_TIMEOUT=3600
-          export DOCKER_CLIENT_TIMEOUT=3600
-          export COMPOSE_PARALLEL_LIMIT=1
+          set -e
+          echo "=========================================="
+          echo "Starting optimized deployment..."
+          echo "=========================================="
+          
+          echo "Pulling latest code..."
+          git fetch origin --quiet
+          git reset --hard origin/main || git reset --hard origin/master
+          
+          echo "Deploying services..."
+          cd backend
+          
+          # Quick cleanup - only stop containers, don't remove (faster)
+          echo "Stopping existing containers..."
+          docker compose -f docker-compose.prod.yml stop || true
+          
+          # Build with cache (much faster)
+          echo "Building containers with cache..."
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
+          export BUILDKIT_PROGRESS=plain
           
-          echo "Starting Docker build (this may take 10-15 minutes)..."
+          # Build backend and frontend in parallel (if possible) or sequentially with cache
+          echo "Building backend..."
+          docker compose -f docker-compose.prod.yml build backend --progress=plain || {
+            echo "Build with cache failed, trying without cache..."
+            docker compose -f docker-compose.prod.yml build backend --no-cache --progress=plain
+          }
           
-          # Build backend (without --no-cache for faster builds, use cache when possible)
-          echo "Building backend first..."
-          if docker compose -f docker-compose.prod.yml build backend --progress=plain 2>&1 | tee /tmp/backend-build.log; then
-              echo "✓ Backend build completed successfully"
+          echo "Building frontend..."
+          docker compose -f docker-compose.prod.yml build frontend --progress=plain || {
+            echo "Build with cache failed, trying without cache..."
+            docker compose -f docker-compose.prod.yml build frontend --no-cache --progress=plain
+          }
+          
+          echo "Starting containers..."
+          docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+          
+          echo "Waiting for services to be ready..."
+          sleep 3
+          
+          echo "Checking service status..."
+          docker compose -f docker-compose.prod.yml ps
+          
+          echo "Fixing Nginx configuration..."
+          if [ -f ../scripts/fix-nginx.sh ]; then
+              chmod +x ../scripts/fix-nginx.sh
+              ../scripts/fix-nginx.sh
           else
-              echo "❌ Backend build failed!"
-              echo "Last 50 lines of build log:"
-              tail -50 /tmp/backend-build.log
-              echo "Trying to build without cache..."
-              if docker compose -f docker-compose.prod.yml build backend --no-cache --progress=plain 2>&1 | tee /tmp/backend-build.log; then
-                  echo "✓ Backend build completed successfully (without cache)"
-              else
-                  echo "❌ Backend build failed even without cache!"
-                  tail -50 /tmp/backend-build.log
-                  exit 1
-              fi
+              echo "⚠️  Nginx fix script not found, skipping..."
           fi
           
-          # Build frontend (without --no-cache for faster builds, use cache when possible)
-          echo "Building frontend (this may take 5-10 minutes)..."
-          if docker compose -f docker-compose.prod.yml build frontend --progress=plain 2>&1 | tee /tmp/frontend-build.log; then
-              echo "✓ Frontend build completed successfully"
-          else
-              echo "❌ Frontend build failed!"
-              echo "Last 50 lines of build log:"
-              tail -50 /tmp/frontend-build.log
-              echo "Trying to build without cache..."
-              if docker compose -f docker-compose.prod.yml build frontend --no-cache --progress=plain 2>&1 | tee /tmp/frontend-build.log; then
-                  echo "✓ Frontend build completed successfully (without cache)"
-              else
-                  echo "❌ Frontend build failed even without cache!"
-                  tail -50 /tmp/frontend-build.log
-                  exit 1
+          echo "Testing services..."
+          for i in {1..5}; do
+              if curl -s -f http://127.0.0.1:3000/health > /dev/null 2>&1; then
+                  echo "✓ Backend is responding"
+                  break
               fi
-          fi
+              [ $i -eq 5 ] && echo "⚠️  Backend not responding yet" || sleep 1
+          done
           
-          echo "✓ All Docker builds completed successfully"
-            
-            echo "Starting containers..."
-            docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
-            
-            echo "Waiting for services to be ready..."
-            sleep 5
-            
-            echo "Checking service status..."
-            docker compose -f docker-compose.prod.yml ps
-            
-            echo "Recent logs:"
-            docker compose -f docker-compose.prod.yml logs --tail=20
-            
-            echo ""
-            echo "Fixing Nginx configuration..."
-            if [ -f ../scripts/fix-nginx.sh ]; then
-                chmod +x ../scripts/fix-nginx.sh
-                ../scripts/fix-nginx.sh
-            else
-                echo "⚠️  Nginx fix script not found, configuring manually..."
-                printf '%s\n' \
-                    'server {' \
-                    '    listen 80;' \
-                    '    server_name _;' \
-                    '    client_max_body_size 10M;' \
-                    '    location /api {' \
-                    '        proxy_pass http://127.0.0.1:3000/api;' \
-                    '        proxy_http_version 1.1;' \
-                    '        proxy_set_header Upgrade $http_upgrade;' \
-                    '        proxy_set_header Connection '\''upgrade'\'';' \
-                    '        proxy_set_header Host $host;' \
-                    '        proxy_set_header X-Real-IP $remote_addr;' \
-                    '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-                    '        proxy_set_header X-Forwarded-Proto $scheme;' \
-                    '        proxy_cache_bypass $http_upgrade;' \
-                    '        proxy_redirect off;' \
-                    '    }' \
-                    '    location /socket.io {' \
-                    '        proxy_pass http://127.0.0.1:3000;' \
-                    '        proxy_http_version 1.1;' \
-                    '        proxy_set_header Upgrade $http_upgrade;' \
-                    '        proxy_set_header Connection "upgrade";' \
-                    '        proxy_set_header Host $host;' \
-                    '        proxy_set_header X-Real-IP $remote_addr;' \
-                    '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-                    '        proxy_set_header X-Forwarded-Proto $scheme;' \
-                    '    }' \
-                    '    location /health {' \
-                    '        proxy_pass http://127.0.0.1:3000;' \
-                    '        proxy_set_header Host $host;' \
-                    '    }' \
-                    '    location /_next/ {' \
-                    '        proxy_pass http://127.0.0.1:3001;' \
-                    '        proxy_http_version 1.1;' \
-                    '        proxy_set_header Host $host;' \
-                    '        proxy_cache_valid 200 60m;' \
-                    '        add_header Cache-Control "public, immutable";' \
-                    '    }' \
-                    '    location / {' \
-                    '        proxy_pass http://127.0.0.1:3001;' \
-                    '        proxy_http_version 1.1;' \
-                    '        proxy_set_header Upgrade $http_upgrade;' \
-                    '        proxy_set_header Connection '\''upgrade'\'';' \
-                    '        proxy_set_header Host $host;' \
-                    '        proxy_set_header X-Real-IP $remote_addr;' \
-                    '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-                    '        proxy_set_header X-Forwarded-Proto $scheme;' \
-                    '        proxy_cache_bypass $http_upgrade;' \
-                    '        proxy_redirect off;' \
-                    '        proxy_set_header X-Forwarded-Host $host;' \
-                    '        proxy_set_header X-Forwarded-Port $server_port;' \
-                    '        proxy_connect_timeout 60s;' \
-                    '        proxy_send_timeout 60s;' \
-                    '        proxy_read_timeout 60s;' \
-                    '    }' \
-                    '}' > /etc/nginx/sites-available/tree-monitor
-                if [ ! -f /etc/nginx/sites-enabled/tree-monitor ]; then
-                    ln -s /etc/nginx/sites-available/tree-monitor /etc/nginx/sites-enabled/
-                fi
-                nginx -t && systemctl reload nginx
-            fi
-            
-            echo ""
-            echo "Testing services..."
-            for i in {1..6}; do
-                if curl -s http://127.0.0.1:3000/health > /dev/null; then
-                    echo "✓ Backend is responding"
-                    break
-                fi
-                echo "Waiting for backend... ($i/6)"
-                sleep 2
-            done
-            
-            for i in {1..6}; do
-                if curl -s http://127.0.0.1:3001 > /dev/null; then
-                    echo "✓ Frontend is responding"
-                    break
-                fi
-                echo "Waiting for frontend... ($i/6)"
-                sleep 2
-            done
-            
-            echo ""
-            echo "=========================================="
-            echo "Deployment complete!"
-            echo "=========================================="
+          for i in {1..5}; do
+              if curl -s -f http://127.0.0.1:3001 > /dev/null 2>&1; then
+                  echo "✓ Frontend is responding"
+                  break
+              fi
+              [ $i -eq 5 ] && echo "⚠️  Frontend not responding yet" || sleep 1
+          done
+          
+          echo ""
+          echo "=========================================="
+          echo "Deployment complete!"
+          echo "=========================================="
           DEPLOY_SCRIPT
       
       - name: Health Check
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        timeout-minutes: 2
         run: |
           echo "Waiting for services to start..."
-          sleep 10
+          sleep 5
           echo "Checking API health..."
-          curl -f http://${{ secrets.SERVER_HOST }}/health || echo "Health check failed, but deployment may still be in progress"
-
+          curl -f --max-time 10 http://${{ secrets.SERVER_HOST }}/health || echo "⚠️  Health check failed, but deployment may still be in progress"
