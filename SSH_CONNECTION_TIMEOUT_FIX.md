@@ -23,8 +23,8 @@ Host $SERVER_HOST
   ServerAliveCountMax 6        # Keep-alive retry count
   TCPKeepAlive yes            # TCP keep-alive
   Compression yes             # Slow connection uchun compression
-  UseDNS no                   # DNS lookup o'chirildi (tezroq)
   GSSAPIAuthentication no     # GSSAPI o'chirildi
+  GSSAPIDelegateCredentials no
 ```
 
 ### 2. Connection Timeout Oshirildi

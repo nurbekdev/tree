@@ -98,9 +98,9 @@ jobs:
             # Faster cipher algorithms
             Ciphers aes128-ctr,aes192-ctr,aes256-ctr
             MACs hmac-sha2-256,hmac-sha2-512
-            # Disable DNS lookup for faster connection
+            # Disable GSSAPI for faster connection
             GSSAPIAuthentication no
-            UseDNS no
+            GSSAPIDelegateCredentials no
           EOF
           chmod 600 ~/.ssh/config
           
