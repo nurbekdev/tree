@@ -1,5 +1,9 @@
 'use client'
 
+// Force dynamic rendering (no static generation)
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'

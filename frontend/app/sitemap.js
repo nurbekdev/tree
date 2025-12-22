@@ -1,3 +1,6 @@
+// Force dynamic sitemap generation (no static generation)
+export const dynamic = 'force-dynamic'
+
 export default function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app';
   

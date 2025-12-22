@@ -1,5 +1,9 @@
 'use client'
 
+// Force dynamic rendering for this route (no static generation)
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
+
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format, subDays } from 'date-fns'
