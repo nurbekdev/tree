@@ -34,6 +34,8 @@ const nextConfig = {
     optimizeCss: true,
     // Optimize package imports
     optimizePackageImports: ['react-icons', 'date-fns', 'recharts'],
+    // Enable webpack build worker for parallel builds (faster)
+    webpackBuildWorker: true,
   },
   // Webpack optimizations
   webpack: (config, { isServer }) => {
