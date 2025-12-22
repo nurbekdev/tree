@@ -18,7 +18,10 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# Build Next.js application
+# Build Next.js application with increased timeout
+# Set NODE_OPTIONS to increase memory and timeout
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Production image

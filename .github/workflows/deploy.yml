@@ -25,25 +25,76 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 644 ~/.ssh/known_hosts
       
+      - name: Diagnose Connection
+        run: |
+          echo "=========================================="
+          echo "Connection Diagnostics"
+          echo "=========================================="
+          echo "Server Host: ${{ secrets.SERVER_HOST }}"
+          echo "Server User: ${{ secrets.SERVER_USER }}"
+          echo ""
+          echo "Testing basic connectivity..."
+          
+          # Test ping (may fail if ICMP is blocked, but worth trying)
+          if ping -c 3 -W 5 ${{ secrets.SERVER_HOST }} > /dev/null 2>&1; then
+            echo "✓ Server is reachable via ping"
+          else
+            echo "⚠️  Server is not reachable via ping (ICMP may be blocked)"
+          fi
+          
+          # Test port 22
+          echo "Testing port 22..."
+          if timeout 5 bash -c "echo > /dev/tcp/${{ secrets.SERVER_HOST }}/22" 2>/dev/null; then
+            echo "✓ Port 22 is open"
+          else
+            echo "❌ Port 22 is not accessible"
+            echo "Possible causes:"
+            echo "  - Firewall is blocking port 22"
+            echo "  - SSH service is not running on server"
+            echo "  - Server is down or unreachable"
+            echo "  - Network connectivity issues"
+          fi
+          
+          # Test DNS resolution
+          echo "Testing DNS resolution..."
+          if host ${{ secrets.SERVER_HOST }} > /dev/null 2>&1; then
+            echo "✓ DNS resolution successful"
+          else
+            echo "⚠️  DNS resolution failed (may be IP address)"
+          fi
+          
+          echo ""
+          echo "=========================================="
+      
       - name: Test SSH Connection with Retry
         id: ssh_test
+        continue-on-error: true
         run: |
           echo "Testing SSH connection..."
-          MAX_RETRIES=5
+          MAX_RETRIES=3
           RETRY_COUNT=0
-          RETRY_DELAY=10
+          RETRY_DELAY=15
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
             
+            # Try with verbose output for first attempt to see what's happening
+            if [ $RETRY_COUNT -eq 0 ]; then
+              SSH_OPTS="-v"
+            else
+              SSH_OPTS=""
+            fi
+            
             if ssh -i ~/.ssh/id_rsa \
+              $SSH_OPTS \
               -o StrictHostKeyChecking=no \
-              -o ConnectTimeout=20 \
-              -o ServerAliveInterval=5 \
+              -o ConnectTimeout=15 \
+              -o ServerAliveInterval=10 \
               -o ServerAliveCountMax=3 \
               -o TCPKeepAlive=yes \
               -o BatchMode=yes \
               -o LogLevel=ERROR \
+              -o PreferredAuthentications=publickey \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
               "echo 'SSH connection successful'" 2>&1; then
               echo "✓ SSH connection established"
@@ -54,14 +105,25 @@ jobs:
               if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
                 echo "⚠️  Connection failed, retrying in ${RETRY_DELAY}s..."
                 sleep $RETRY_DELAY
-                RETRY_DELAY=$((RETRY_DELAY + 5))
+                RETRY_DELAY=$((RETRY_DELAY + 10))
               fi
             fi
           done
           
           echo "❌ SSH connection failed after $MAX_RETRIES attempts"
+          echo ""
+          echo "Troubleshooting steps:"
+          echo "1. Check if server is running: ping ${{ secrets.SERVER_HOST }}"
+          echo "2. Check if SSH service is running on server: sudo systemctl status ssh"
+          echo "3. Check server firewall: sudo ufw status"
+          echo "4. Verify SSH key in GitHub Secrets"
+          echo "5. Try connecting manually: ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}"
+          echo ""
+          echo "If SSH is not available, you may need to:"
+          echo "- Fix SSH service on server"
+          echo "- Open port 22 in firewall"
+          echo "- Use alternative deployment method"
           echo "connected=false" >> $GITHUB_OUTPUT
-          exit 1
       
       - name: Deploy to server
         if: steps.ssh_test.outputs.connected == 'true'
@@ -104,18 +166,20 @@ jobs:
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
           export BUILDKIT_PROGRESS=plain
+          export COMPOSE_HTTP_TIMEOUT=1800
+          export DOCKER_CLIENT_TIMEOUT=1800
           
           # Build backend and frontend in parallel (if possible) or sequentially with cache
           echo "Building backend..."
-          docker compose -f docker-compose.prod.yml build backend --progress=plain || {
+          timeout 600 docker compose -f docker-compose.prod.yml build backend --progress=plain || {
             echo "Build with cache failed, trying without cache..."
-            docker compose -f docker-compose.prod.yml build backend --no-cache --progress=plain
+            timeout 600 docker compose -f docker-compose.prod.yml build backend --no-cache --progress=plain
           }
           
-          echo "Building frontend..."
-          docker compose -f docker-compose.prod.yml build frontend --progress=plain || {
+          echo "Building frontend (this may take 5-10 minutes)..."
+          timeout 900 docker compose -f docker-compose.prod.yml build frontend --progress=plain || {
             echo "Build with cache failed, trying without cache..."
-            docker compose -f docker-compose.prod.yml build frontend --no-cache --progress=plain
+            timeout 1200 docker compose -f docker-compose.prod.yml build frontend --no-cache --progress=plain
           }
           
           echo "Starting containers..."

@@ -13,6 +13,13 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Increase static generation timeout (default is 60s)
+  staticPageGenerationTimeout: 300, // 5 minutes
+  // Optimize build
+  experimental: {
+    // Reduce build time
+    optimizeCss: true,
+  },
   // Ensure proper routing
   async redirects() {
     return [
