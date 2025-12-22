@@ -1,4 +1,4 @@
-name: Deploy to Production Server
+name: Deploy to Production Server (with Retry)
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     
     steps:
       - name: Checkout code
@@ -77,7 +77,7 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=20 \
             -o ServerAliveInterval=5 \
-            -o ServerAliveCountMax=10 \
+            -o ServerAliveCountMax=20 \
             -o TCPKeepAlive=yes \
             -o BatchMode=yes \
             -o LogLevel=ERROR \
