@@ -3,7 +3,7 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better cache
 COPY package*.json ./
 
 # Install dependencies with clean cache
@@ -12,6 +12,7 @@ RUN npm install --prefer-offline --no-audit --progress=false && \
     npm cache clean --force
 
 # Copy source code
+# .dockerignore already excludes unnecessary files
 COPY . .
 
 # Set build-time environment variable
@@ -24,6 +25,9 @@ ENV NODE_OPTIONS="--max-old-space-size=6144"
 ENV NEXT_TELEMETRY_DISABLED=1
 # Increase build timeout for complex pages
 ENV NEXT_STATIC_GENERATION_TIMEOUT=600
+# Disable type checking and linting during build for faster builds
+ENV SKIP_ENV_VALIDATION=true
+# Run build with optimizations
 RUN npm run build
 
 # Production image

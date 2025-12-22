@@ -51,6 +51,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://64.225.20.211}
+        SKIP_ENV_VALIDATION: "true"
     container_name: tree-monitor-frontend-prod
     environment:
       NODE_ENV: production

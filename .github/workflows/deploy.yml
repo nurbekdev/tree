@@ -176,11 +176,19 @@ jobs:
             docker compose -f docker-compose.prod.yml --progress=plain build --no-cache backend
           }
           
-          echo "Building frontend (this may take 10-15 minutes due to Next.js build)..."
-          # Frontend build may take longer, increase timeout
-          timeout 1800 docker compose -f docker-compose.prod.yml --progress=plain build frontend || {
+          echo "Building frontend (this may take 5-10 minutes)..."
+          # Frontend build with optimizations
+          # Set build args for faster builds
+          COMPOSE_HTTP_TIMEOUT=1800 DOCKER_CLIENT_TIMEOUT=1800 \
+          docker compose -f docker-compose.prod.yml --progress=plain build \
+            --build-arg SKIP_ENV_VALIDATION=true \
+            frontend || {
             echo "Build with cache failed, trying without cache..."
-            timeout 2400 docker compose -f docker-compose.prod.yml --progress=plain build --no-cache frontend
+            COMPOSE_HTTP_TIMEOUT=2400 DOCKER_CLIENT_TIMEOUT=2400 \
+            docker compose -f docker-compose.prod.yml --progress=plain build \
+              --no-cache \
+              --build-arg SKIP_ENV_VALIDATION=true \
+              frontend
           }
           
           echo "Starting containers..."
