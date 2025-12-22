@@ -1,8 +1,6 @@
 'use client'
 
-// Force dynamic rendering (no static generation)
-export const dynamic = 'force-dynamic'
-export const dynamicParams = true
+// Note: 'use client' components are automatically dynamic
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'

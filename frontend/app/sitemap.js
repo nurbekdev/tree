@@ -1,6 +1,4 @@
-// Force dynamic sitemap generation (no static generation)
-export const dynamic = 'force-dynamic'
-
+// Sitemap is automatically dynamic in Next.js 14
 export default function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app';
   
