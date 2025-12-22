@@ -69,30 +69,35 @@ jobs:
       - name: Test SSH Connection with Retry
         id: ssh_test
         continue-on-error: true
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           echo "Testing SSH connection..."
           MAX_RETRIES=5
           RETRY_COUNT=0
-          RETRY_DELAY=10
+          RETRY_DELAY=15
+          
+          # Test raw TCP connection first
+          echo "Testing raw TCP connection to port 22..."
+          if timeout 10 bash -c "echo > /dev/tcp/${{ secrets.SERVER_HOST }}/22" 2>/dev/null; then
+            echo "✓ Port 22 is reachable"
+          else
+            echo "⚠️  Port 22 is not reachable via TCP"
+          fi
           
           # Create SSH config for better connection handling
+          # Simplified config without ControlMaster (can cause issues)
           cat > ~/.ssh/config << EOF
           Host ${{ secrets.SERVER_HOST }}
             HostName ${{ secrets.SERVER_HOST }}
             User ${{ secrets.SERVER_USER }}
             IdentityFile ~/.ssh/id_rsa
             StrictHostKeyChecking no
-            ConnectTimeout 30
-            ServerAliveInterval 15
-            ServerAliveCountMax 6
+            ConnectTimeout 60
+            ServerAliveInterval 20
+            ServerAliveCountMax 10
             TCPKeepAlive yes
             BatchMode yes
             PreferredAuthentications publickey
-            # Increase timeout for banner exchange
-            ControlMaster auto
-            ControlPath ~/.ssh/control-%h-%p-%r
-            ControlPersist 5m
             # Compression for slow connections
             Compression yes
             # Faster cipher algorithms
@@ -101,49 +106,92 @@ jobs:
             # Disable GSSAPI for faster connection
             GSSAPIAuthentication no
             GSSAPIDelegateCredentials no
+            # Disable other slow features
+            KbdInteractiveAuthentication no
+            PasswordAuthentication no
+            # Increase login grace time
+            LoginGraceTime 60
           EOF
           chmod 600 ~/.ssh/config
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo ""
             echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
+            echo "Connecting to ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}..."
             
-            # Test connection with timeout
-            if timeout 45 ssh ${{ secrets.SERVER_HOST }} \
-              "echo 'SSH connection successful'" 2>&1; then
-              echo "✓ SSH connection established"
+            # Test connection with increased timeout (60s connect + 10s command)
+            if timeout 70 ssh -v ${{ secrets.SERVER_HOST }} \
+              "echo 'SSH connection successful'" 2>&1 | tee /tmp/ssh_output.log; then
+              echo ""
+              echo "✓ SSH connection established successfully!"
               echo "connected=true" >> $GITHUB_OUTPUT
               exit 0
             else
               SSH_EXIT_CODE=$?
               RETRY_COUNT=$((RETRY_COUNT + 1))
               
+              echo ""
+              echo "⚠️  Connection failed (exit code: $SSH_EXIT_CODE)"
+              
+              # Show last few lines of SSH output for debugging
+              if [ -f /tmp/ssh_output.log ]; then
+                echo "Last SSH output:"
+                tail -20 /tmp/ssh_output.log || true
+              fi
+              
               if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "⚠️  Connection failed (exit code: $SSH_EXIT_CODE), retrying in ${RETRY_DELAY}s..."
+                echo "Retrying in ${RETRY_DELAY}s..."
                 echo "This might be due to:"
-                echo "  - Network latency"
-                echo "  - Server load"
+                echo "  - Network latency or packet loss"
+                echo "  - Server load (high CPU/memory usage)"
                 echo "  - SSH service response time"
+                echo "  - Firewall or network restrictions"
                 sleep $RETRY_DELAY
-                RETRY_DELAY=$((RETRY_DELAY + 5))
+                RETRY_DELAY=$((RETRY_DELAY + 10))
               fi
             fi
           done
           
+          echo ""
           echo "❌ SSH connection failed after $MAX_RETRIES attempts"
           echo ""
-          echo "Troubleshooting steps:"
-          echo "1. Check if server is running: ping ${{ secrets.SERVER_HOST }}"
-          echo "2. Check if SSH service is running on server: sudo systemctl status ssh"
-          echo "3. Check server firewall: sudo ufw status"
-          echo "4. Verify SSH key in GitHub Secrets"
-          echo "5. Check server load: ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'uptime'"
-          echo "6. Check SSH logs on server: sudo tail -f /var/log/auth.log"
+          echo "=========================================="
+          echo "Troubleshooting Information"
+          echo "=========================================="
           echo ""
-          echo "If SSH is not available, you may need to:"
-          echo "- Fix SSH service on server"
-          echo "- Open port 22 in firewall"
-          echo "- Restart SSH service: sudo systemctl restart ssh"
-          echo "- Use alternative deployment method"
+          echo "Server: ${{ secrets.SERVER_HOST }}"
+          echo "User: ${{ secrets.SERVER_USER }}"
+          echo ""
+          echo "Please check on the server:"
+          echo ""
+          echo "1. SSH Service Status:"
+          echo "   sudo systemctl status ssh"
+          echo "   sudo systemctl restart ssh"
+          echo ""
+          echo "2. Firewall:"
+          echo "   sudo ufw status"
+          echo "   sudo ufw allow 22/tcp"
+          echo ""
+          echo "3. SSH Config:"
+          echo "   sudo nano /etc/ssh/sshd_config"
+          echo "   # Add/check these settings:"
+          echo "   # MaxStartups 10:30:100"
+          echo "   # LoginGraceTime 60"
+          echo "   # UseDNS no"
+          echo "   sudo systemctl reload ssh"
+          echo ""
+          echo "4. Server Load:"
+          echo "   uptime"
+          echo "   top"
+          echo ""
+          echo "5. SSH Logs:"
+          echo "   sudo tail -50 /var/log/auth.log"
+          echo ""
+          echo "6. Port 22:"
+          echo "   sudo netstat -tuln | grep 22"
+          echo "   sudo ss -tuln | grep 22"
+          echo ""
+          echo "=========================================="
           echo "connected=false" >> $GITHUB_OUTPUT
       
       - name: Deploy to server
@@ -156,8 +204,11 @@ jobs:
         run: |
           SERVER_PATH="${{ secrets.SERVER_PATH }}"
           
-          # Use SSH config for optimized connection
-          ssh ${{ secrets.SERVER_HOST }} \
+          # Use SSH with optimized settings
+          ssh -o ConnectTimeout=60 \
+              -o ServerAliveInterval=20 \
+              -o ServerAliveCountMax=10 \
+              ${{ secrets.SERVER_HOST }} \
             "cd '$SERVER_PATH' && bash -s" << 'DEPLOY_SCRIPT'
           set -e
           echo "=========================================="
