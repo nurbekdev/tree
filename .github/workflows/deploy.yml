@@ -10,7 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     
     steps:
       - name: Checkout code
@@ -200,14 +200,15 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        timeout-minutes: 25
+        timeout-minutes: 40
         run: |
           SERVER_PATH="${{ secrets.SERVER_PATH }}"
           
-          # Use SSH with optimized settings
+          # Use SSH with optimized settings and keep connection alive
           ssh -o ConnectTimeout=60 \
-              -o ServerAliveInterval=20 \
-              -o ServerAliveCountMax=10 \
+              -o ServerAliveInterval=15 \
+              -o ServerAliveCountMax=30 \
+              -o TCPKeepAlive=yes \
               ${{ secrets.SERVER_HOST }} \
             "cd '$SERVER_PATH' && bash -s" << 'DEPLOY_SCRIPT'
           set -e
@@ -253,18 +254,31 @@ jobs:
             docker compose --progress=plain -f docker-compose.prod.yml build --no-cache backend
           }
           
-          echo "Building frontend (this may take 5-10 minutes)..."
+          echo "Building frontend (this may take 10-15 minutes)..."
+          echo "Note: Next.js build can take time, please be patient..."
+          echo "Build started at: $(date)"
+          
           # Frontend build with optimizations
           # Set build args for faster builds
+          # Increase Docker build timeout
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          export COMPOSE_BAKE=true
+          export COMPOSE_HTTP_TIMEOUT=2400
+          export DOCKER_CLIENT_TIMEOUT=2400
+          
           docker compose --progress=plain -f docker-compose.prod.yml build \
             --build-arg SKIP_ENV_VALIDATION=true \
             frontend || {
             echo "⚠️  Build with cache failed, trying without cache..."
+            echo "Retry started at: $(date)"
             docker compose --progress=plain -f docker-compose.prod.yml build \
               --no-cache \
               --build-arg SKIP_ENV_VALIDATION=true \
               frontend
           }
+          
+          echo "Build completed at: $(date)"
           
           echo "Starting containers..."
           docker compose --progress=plain -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
