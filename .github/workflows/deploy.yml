@@ -211,16 +211,24 @@ jobs:
               ${{ secrets.SERVER_HOST }} \
             "cd '$SERVER_PATH' && bash -s" << 'DEPLOY_SCRIPT'
           set -e
+          set -o pipefail
+          
           echo "=========================================="
           echo "Starting optimized deployment..."
           echo "=========================================="
           
           echo "Pulling latest code..."
-          git fetch origin --quiet
-          git reset --hard origin/main || git reset --hard origin/master
+          git fetch origin --quiet || true
+          git reset --hard origin/main || git reset --hard origin/master || true
           
           echo "Deploying services..."
-          cd backend
+          cd backend || { echo "❌ Failed to cd to backend directory"; exit 1; }
+          
+          # Verify docker-compose file exists
+          if [ ! -f docker-compose.prod.yml ]; then
+            echo "❌ docker-compose.prod.yml not found!"
+            exit 1
+          fi
           
           # Quick cleanup - only stop containers, don't remove (faster)
           echo "Stopping existing containers..."
@@ -233,37 +241,39 @@ jobs:
           export COMPOSE_BAKE=true
           export COMPOSE_HTTP_TIMEOUT=1800
           export DOCKER_CLIENT_TIMEOUT=1800
+          export BUILDKIT_PROGRESS=plain
+          
+          # Use global --progress flag (correct way)
+          COMPOSE_PROGRESS=plain
           
           # Build backend and frontend sequentially with cache
           echo "Building backend..."
-          docker compose -f docker-compose.prod.yml --progress=plain build backend || {
-            echo "Build with cache failed, trying without cache..."
-            docker compose -f docker-compose.prod.yml --progress=plain build --no-cache backend
+          docker compose --progress=plain -f docker-compose.prod.yml build backend || {
+            echo "⚠️  Build with cache failed, trying without cache..."
+            docker compose --progress=plain -f docker-compose.prod.yml build --no-cache backend
           }
           
           echo "Building frontend (this may take 5-10 minutes)..."
           # Frontend build with optimizations
           # Set build args for faster builds
-          COMPOSE_HTTP_TIMEOUT=1800 DOCKER_CLIENT_TIMEOUT=1800 \
-          docker compose -f docker-compose.prod.yml --progress=plain build \
+          docker compose --progress=plain -f docker-compose.prod.yml build \
             --build-arg SKIP_ENV_VALIDATION=true \
             frontend || {
-            echo "Build with cache failed, trying without cache..."
-            COMPOSE_HTTP_TIMEOUT=2400 DOCKER_CLIENT_TIMEOUT=2400 \
-            docker compose -f docker-compose.prod.yml --progress=plain build \
+            echo "⚠️  Build with cache failed, trying without cache..."
+            docker compose --progress=plain -f docker-compose.prod.yml build \
               --no-cache \
               --build-arg SKIP_ENV_VALIDATION=true \
               frontend
           }
           
           echo "Starting containers..."
-          docker compose -f docker-compose.prod.yml --progress=plain up -d --force-recreate --remove-orphans
+          docker compose --progress=plain -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
           
           echo "Waiting for services to be ready..."
           sleep 3
           
           echo "Checking service status..."
-          docker compose -f docker-compose.prod.yml --progress=plain ps
+          docker compose --progress=plain -f docker-compose.prod.yml ps
           
           echo "Fixing Nginx configuration..."
           if [ -f ../scripts/fix-nginx.sh ]; then
@@ -274,25 +284,39 @@ jobs:
           fi
           
           echo "Testing services..."
-          for i in {1..5}; do
+          BACKEND_READY=false
+          FRONTEND_READY=false
+          
+          for i in {1..10}; do
               if curl -s -f http://127.0.0.1:3000/health > /dev/null 2>&1; then
                   echo "✓ Backend is responding"
+                  BACKEND_READY=true
                   break
               fi
-              [ $i -eq 5 ] && echo "⚠️  Backend not responding yet" || sleep 1
+              [ $i -eq 10 ] && echo "⚠️  Backend not responding after 10 attempts" || sleep 2
           done
           
-          for i in {1..5}; do
+          for i in {1..10}; do
               if curl -s -f http://127.0.0.1:3001 > /dev/null 2>&1; then
                   echo "✓ Frontend is responding"
+                  FRONTEND_READY=true
                   break
               fi
-              [ $i -eq 5 ] && echo "⚠️  Frontend not responding yet" || sleep 1
+              [ $i -eq 10 ] && echo "⚠️  Frontend not responding after 10 attempts" || sleep 2
           done
           
           echo ""
           echo "=========================================="
-          echo "Deployment complete!"
+          if [ "$BACKEND_READY" = true ] && [ "$FRONTEND_READY" = true ]; then
+              echo "✓ Deployment complete! All services are running."
+          else
+              echo "⚠️  Deployment completed with warnings."
+              echo "Backend ready: $BACKEND_READY"
+              echo "Frontend ready: $FRONTEND_READY"
+              echo ""
+              echo "Checking container logs..."
+              docker compose --progress=plain -f docker-compose.prod.yml logs --tail=50 || true
+          fi
           echo "=========================================="
           DEPLOY_SCRIPT
       
