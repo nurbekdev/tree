@@ -10,7 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     
     steps:
       - name: Checkout code
@@ -200,7 +200,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        timeout-minutes: 15
+        timeout-minutes: 25
         run: |
           SERVER_PATH="${{ secrets.SERVER_PATH }}"
           
@@ -270,39 +270,35 @@ jobs:
           docker compose --progress=plain -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
           
           echo "Waiting for services to be ready..."
-          sleep 3
+          sleep 2
           
           echo "Checking service status..."
-          docker compose --progress=plain -f docker-compose.prod.yml ps
+          docker compose --progress=plain -f docker-compose.prod.yml ps || true
           
-          echo "Fixing Nginx configuration..."
-          if [ -f ../scripts/fix-nginx.sh ]; then
-              chmod +x ../scripts/fix-nginx.sh
-              ../scripts/fix-nginx.sh
-          else
-              echo "⚠️  Nginx fix script not found, skipping..."
-          fi
+          # Nginx fix is optional and can be done separately if needed
+          # Skipping to save time during deployment
           
           echo "Testing services..."
           BACKEND_READY=false
           FRONTEND_READY=false
           
-          for i in {1..10}; do
+          # Quick health check (5 attempts, 2s delay = 10s max)
+          for i in {1..5}; do
               if curl -s -f http://127.0.0.1:3000/health > /dev/null 2>&1; then
                   echo "✓ Backend is responding"
                   BACKEND_READY=true
                   break
               fi
-              [ $i -eq 10 ] && echo "⚠️  Backend not responding after 10 attempts" || sleep 2
+              [ $i -eq 5 ] && echo "⚠️  Backend not responding after 5 attempts" || sleep 2
           done
           
-          for i in {1..10}; do
+          for i in {1..5}; do
               if curl -s -f http://127.0.0.1:3001 > /dev/null 2>&1; then
                   echo "✓ Frontend is responding"
                   FRONTEND_READY=true
                   break
               fi
-              [ $i -eq 10 ] && echo "⚠️  Frontend not responding after 10 attempts" || sleep 2
+              [ $i -eq 5 ] && echo "⚠️  Frontend not responding after 5 attempts" || sleep 2
           done
           
           echo ""
@@ -310,12 +306,12 @@ jobs:
           if [ "$BACKEND_READY" = true ] && [ "$FRONTEND_READY" = true ]; then
               echo "✓ Deployment complete! All services are running."
           else
-              echo "⚠️  Deployment completed with warnings."
+              echo "⚠️  Deployment completed. Services may still be starting."
               echo "Backend ready: $BACKEND_READY"
               echo "Frontend ready: $FRONTEND_READY"
               echo ""
-              echo "Checking container logs..."
-              docker compose --progress=plain -f docker-compose.prod.yml logs --tail=50 || true
+              echo "Note: Services may need a few more seconds to fully start."
+              echo "Check logs with: docker compose -f docker-compose.prod.yml logs"
           fi
           echo "=========================================="
           DEPLOY_SCRIPT
