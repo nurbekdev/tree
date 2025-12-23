@@ -7,14 +7,28 @@ import { io } from 'socket.io-client';
 // Get Socket URL from environment variable or use current origin
 // Nginx proxies /socket.io/* to backend, so we use relative URLs
 const getSocketURL = () => {
-  // Client-side: always use current origin (works with Nginx proxy)
-  // Nginx handles /socket.io/* routing to backend
+  // Check if we have explicit API URL in environment (for development)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
   if (typeof window !== 'undefined') {
+    // Client-side: check if localhost (development mode)
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    if (isLocalhost) {
+      // Development: backend runs on port 3000
+      return 'http://localhost:3000';
+    }
+    
+    // Production: use current origin (works with Nginx proxy)
+    // Nginx handles /socket.io/* routing to backend
     return window.location.origin;
   }
   
   // Server-side fallback to production domain
-  return process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app';
+  return process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app';
 };
 
 let socket = null;

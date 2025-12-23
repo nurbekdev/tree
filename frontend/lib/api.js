@@ -8,13 +8,28 @@ import axios from 'axios';
 // In production, use relative URL if same domain (works with Nginx proxy)
 // Nginx proxies /api/* to backend, so we use relative URLs
 const getAPIURL = () => {
+  // Check if we have explicit API URL in environment (for development)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
   if (typeof window !== 'undefined') {
-    // Client-side: always use current origin (works with Nginx proxy)
+    // Client-side: check if localhost (development mode)
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    if (isLocalhost) {
+      // Development: backend runs on port 3000
+      return 'http://localhost:3000';
+    }
+    
+    // Production: use current origin (works with Nginx proxy)
     // Nginx handles /api/* routing to backend
     return window.location.origin;
   }
+  
   // Server-side: use environment variable or default to production domain
-  return process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app';
+  return process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app';
 };
 
 const API_URL = getAPIURL();
