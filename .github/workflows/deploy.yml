@@ -24,7 +24,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 644 ~/.ssh/known_hosts
-      
+          
       - name: Diagnose Connection
         run: |
           echo "=========================================="
@@ -109,8 +109,6 @@ jobs:
             # Disable other slow features
             KbdInteractiveAuthentication no
             PasswordAuthentication no
-            # Increase login grace time
-            LoginGraceTime 60
           EOF
           chmod 600 ~/.ssh/config
           
@@ -298,34 +296,34 @@ jobs:
           
           # Quick health check (5 attempts, 2s delay = 10s max)
           for i in {1..5}; do
-              if curl -s -f http://127.0.0.1:3000/health > /dev/null 2>&1; then
-                  echo "✓ Backend is responding"
-                  BACKEND_READY=true
-                  break
-              fi
-              [ $i -eq 5 ] && echo "⚠️  Backend not responding after 5 attempts" || sleep 2
+            if curl -s -f http://127.0.0.1:3000/health > /dev/null 2>&1; then
+              echo "✓ Backend is responding"
+              BACKEND_READY=true
+              break
+            fi
+            [ $i -eq 5 ] && echo "⚠️  Backend not responding after 5 attempts" || sleep 2
           done
           
           for i in {1..5}; do
-              if curl -s -f http://127.0.0.1:3001 > /dev/null 2>&1; then
-                  echo "✓ Frontend is responding"
-                  FRONTEND_READY=true
-                  break
-              fi
-              [ $i -eq 5 ] && echo "⚠️  Frontend not responding after 5 attempts" || sleep 2
+            if curl -s -f http://127.0.0.1:3001 > /dev/null 2>&1; then
+              echo "✓ Frontend is responding"
+              FRONTEND_READY=true
+              break
+            fi
+            [ $i -eq 5 ] && echo "⚠️  Frontend not responding after 5 attempts" || sleep 2
           done
           
           echo ""
           echo "=========================================="
           if [ "$BACKEND_READY" = true ] && [ "$FRONTEND_READY" = true ]; then
-              echo "✓ Deployment complete! All services are running."
+            echo "✓ Deployment complete! All services are running."
           else
-              echo "⚠️  Deployment completed. Services may still be starting."
-              echo "Backend ready: $BACKEND_READY"
-              echo "Frontend ready: $FRONTEND_READY"
-              echo ""
-              echo "Note: Services may need a few more seconds to fully start."
-              echo "Check logs with: docker compose -f docker-compose.prod.yml logs"
+            echo "⚠️  Deployment completed. Services may still be starting."
+            echo "Backend ready: $BACKEND_READY"
+            echo "Frontend ready: $FRONTEND_READY"
+            echo ""
+            echo "Note: Services may need a few more seconds to fully start."
+            echo "Check logs with: docker compose -f docker-compose.prod.yml logs"
           fi
           echo "=========================================="
           DEPLOY_SCRIPT
