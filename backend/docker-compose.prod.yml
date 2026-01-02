@@ -30,8 +30,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       PORT: 3000
     ports:
-      # Backend is accessed through Nginx (port 80), not directly
-      # ESP8266 devices connect via Nginx: http://64.225.20.211/api/v1/telemetry
+      # Backend is accessed through Nginx (port 80/443), not directly
+      # ESP8266 devices connect via Nginx: http://64.225.20.211/api/v1/telemetry (IP for hardware)
+      # Frontend connects via domain: https://nextree.app/api/v1/* (domain for web)
       # Nginx proxies /api/* requests to backend on port 3000
       - "127.0.0.1:3000:3000"  # Only accessible from localhost (Nginx proxy)
     depends_on:
@@ -50,12 +51,12 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://64.225.20.211}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nextree.app}
         SKIP_ENV_VALIDATION: "true"
     container_name: tree-monitor-frontend-prod
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://64.225.20.211}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nextree.app}
     ports:
       - "127.0.0.1:3001:3001"  # Only accessible from localhost (Nginx will proxy)
     volumes:

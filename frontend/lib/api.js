@@ -29,7 +29,8 @@ const getAPIURL = () => {
   }
   
   // Server-side: use environment variable or default to production domain
-  return process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app';
+  // Always use domain in production, not IP
+  return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_API_URL || 'https://nextree.app';
 };
 
 const API_URL = getAPIURL();

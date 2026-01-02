@@ -28,7 +28,8 @@ const getSocketURL = () => {
   }
   
   // Server-side fallback to production domain
-  return process.env.NEXT_PUBLIC_SITE_URL || 'https://nextree.app';
+  // Always use domain in production, not IP
+  return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_API_URL || 'https://nextree.app';
 };
 
 let socket = null;

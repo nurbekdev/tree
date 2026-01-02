@@ -19,7 +19,8 @@ fi
 cat > /etc/nginx/sites-available/tree-monitor << 'NGINX_EOF'
 server {
     listen 80;
-    server_name _;  # Replace with your domain name
+    listen [::]:80;
+    server_name nextree.app www.nextree.app 64.225.20.211 _;
 
     # Increase body size for file uploads
     client_max_body_size 10M;

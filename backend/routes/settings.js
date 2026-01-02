@@ -50,8 +50,10 @@ router.get('/esp8266/config', async (req, res) => {
                      process.env.API_URL;
     
     // If no environment variable set, use server's public IP (port 80 via Nginx)
+    // ESP8266 devices need IP address (not domain) because they can't resolve DNS
     if (!backendUrl) {
-      // Default to production server IP for ESP8266 (no port, uses port 80)
+      // Default to production server IP for ESP8266 (no port, uses port 80 via Nginx)
+      // Note: ESP8266 uses IP because it can't resolve domain names
       backendUrl = 'http://64.225.20.211';
     }
     
