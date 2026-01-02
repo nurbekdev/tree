@@ -21,12 +21,15 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Build Next.js application with increased timeout and memory
 # Set NODE_OPTIONS to increase memory and disable telemetry
-ENV NODE_OPTIONS="--max-old-space-size=6144"
+ENV NODE_OPTIONS="--max-old-space-size=8192"
 ENV NEXT_TELEMETRY_DISABLED=1
 # Increase build timeout for complex pages
 ENV NEXT_STATIC_GENERATION_TIMEOUT=600
 # Disable type checking and linting during build for faster builds
 ENV SKIP_ENV_VALIDATION=true
+ENV NODE_ENV=production
+# Disable source maps for faster builds
+ENV GENERATE_SOURCEMAP=false
 # Run build with optimizations
 RUN npm run build
 
