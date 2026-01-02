@@ -14,9 +14,9 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   // Increase static generation timeout (default is 60s)
-  // Set to 600s (10 minutes) to handle complex pages
+  // Set to 300s (5 minutes) to handle complex pages
   // Note: All pages use 'use client', so they're automatically dynamic
-  staticPageGenerationTimeout: 600, // 10 minutes
+  staticPageGenerationTimeout: 300, // 5 minutes
   // Disable source maps for faster builds
   productionBrowserSourceMaps: false,
   // Optimize build - disable unnecessary checks during build

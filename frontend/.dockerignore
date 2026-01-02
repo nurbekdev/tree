@@ -2,7 +2,6 @@ node_modules
 .next
 .git
 .gitignore
-README.md
 *.md
 .env.local
 .env.development.local
@@ -23,4 +22,5 @@ coverage
 tests
 docs
 .github
+*.md
 
