@@ -69,7 +69,7 @@ jobs:
       - name: Test SSH Connection with Retry
         id: ssh_test
         continue-on-error: true
-        timeout-minutes: 10
+        timeout-minutes: 5
         run: |
           echo "Testing SSH connection..."
           MAX_RETRIES=5
