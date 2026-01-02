@@ -32,8 +32,6 @@ const nextConfig = {
   },
   // Optimize build
   experimental: {
-    // Reduce build time
-    optimizeCss: true,
     // Optimize package imports
     optimizePackageImports: ['react-icons', 'date-fns', 'recharts'],
     // Enable webpack build worker for parallel builds (faster)
@@ -87,6 +85,10 @@ const nextConfig = {
         permanent: false,
       },
     ]
+  },
+  // Generate unique build ID
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
   },
 }
 
