@@ -69,7 +69,7 @@ jobs:
       - name: Test SSH Connection with Retry
         id: ssh_test
         continue-on-error: true
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           echo "Testing SSH connection..."
           MAX_RETRIES=5
@@ -92,9 +92,9 @@ jobs:
             User ${{ secrets.SERVER_USER }}
             IdentityFile ~/.ssh/id_rsa
             StrictHostKeyChecking no
-            ConnectTimeout 60
-            ServerAliveInterval 20
-            ServerAliveCountMax 10
+            ConnectTimeout 90
+            ServerAliveInterval 30
+            ServerAliveCountMax 6
             TCPKeepAlive yes
             BatchMode yes
             PreferredAuthentications publickey
@@ -109,6 +109,8 @@ jobs:
             # Disable other slow features
             KbdInteractiveAuthentication no
             PasswordAuthentication no
+            # Increase connection retry
+            ConnectAttempts 3
           EOF
           chmod 600 ~/.ssh/config
           
@@ -117,8 +119,13 @@ jobs:
             echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
             echo "Connecting to ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}..."
             
-            # Test connection with increased timeout (60s connect + 10s command)
-            if timeout 70 ssh -v ${{ secrets.SERVER_HOST }} \
+            # Test connection with increased timeout (90s connect + 10s command)
+            # Use -v for verbose output only on first attempt
+            SSH_VERBOSE=""
+            if [ $RETRY_COUNT -eq 0 ]; then
+              SSH_VERBOSE="-v"
+            fi
+            if timeout 100 ssh $SSH_VERBOSE ${{ secrets.SERVER_HOST }} \
               "echo 'SSH connection successful'" 2>&1 | tee /tmp/ssh_output.log; then
               echo ""
               echo "✓ SSH connection established successfully!"
