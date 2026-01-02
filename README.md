@@ -107,9 +107,17 @@ Access the web app at `http://localhost:3001`
 
 ⚠️ **IMPORTANT:** Change the default password in production!
 
-## Wiring Diagrams
+## Documentation
 
-See `docs/wiring.md` for detailed wiring diagrams.
+📚 **To'liq dokumentatsiya:** [https://nextree.app/docs](https://nextree.app/docs)
+
+Qo'llanmalar:
+- [O'rnatish Qo'llanmasi](docs/INSTALLATION.md)
+- [API Dokumentatsiyasi](docs/API.md)
+- [Hardware Yig'ish](docs/wiring.md)
+- [Muammolarni Hal Qilish](docs/troubleshooting.md)
+- [HTTPS Sozlash](docs/HTTPS_SETUP.md)
+- [ESP8266 Backend URL](docs/ESP8266_BACKEND_URL_GUIDE.md)
 
 ## Configuration
 
@@ -190,7 +198,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 ## Troubleshooting
 
-See `docs/troubleshooting.md` for common issues and solutions.
+Batafsil ma'lumot: [docs/troubleshooting.md](docs/troubleshooting.md) yoki [online dokumentatsiya](https://nextree.app/docs)
 
 ## License
 

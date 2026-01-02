@@ -1,26 +1,36 @@
 #!/bin/bash
 
-# Nginx Fix Script for Tree Monitor
-# Bu script Nginx konfiguratsiyasini yangilaydi
+# Fix IP Address HTTP Access for ESP8266
+# Bu script IP manzil uchun HTTP server block qo'shadi (ESP8266 uchun)
 
 set -e
 
 echo "=========================================="
-echo "Fixing Nginx Configuration"
+echo "Fixing IP Address HTTP Access"
 echo "=========================================="
 
+NGINX_CONFIG="/etc/nginx/sites-available/tree-monitor"
+
 # Backup existing config
-if [ -f /etc/nginx/sites-available/tree-monitor ]; then
-    cp /etc/nginx/sites-available/tree-monitor /etc/nginx/sites-available/tree-monitor.backup.$(date +%Y%m%d_%H%M%S)
+if [ -f "$NGINX_CONFIG" ]; then
+    cp "$NGINX_CONFIG" "${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
     echo "✓ Backup created"
 fi
 
-# Create new Nginx config
-cat > /etc/nginx/sites-available/tree-monitor << 'NGINX_EOF'
+# Check if IP-based HTTP server block already exists
+if grep -q "server_name 64.225.20.211 _" "$NGINX_CONFIG" && grep -q "# ESP8266 IP access" "$NGINX_CONFIG"; then
+    echo "✓ IP-based HTTP server block already exists"
+else
+    echo "Adding IP-based HTTP server block for ESP8266..."
+    
+    # Create IP-based HTTP server block
+    IP_SERVER_BLOCK=$(cat << 'IP_BLOCK'
+# ESP8266 IP access - HTTP only (no redirect to HTTPS)
+# ESP8266 devices cannot use HTTPS or domain names
 server {
     listen 80;
     listen [::]:80;
-    server_name nextree.app www.nextree.app 64.225.20.211 _;
+    server_name 64.225.20.211 _;
 
     # Increase body size for file uploads
     client_max_body_size 10M;
@@ -75,7 +85,6 @@ server {
     }
 
     # Frontend (Next.js) - must be last location block
-    # This catches all requests that don't match above locations
     location / {
         # CRITICAL: Use trailing slash in proxy_pass to preserve path
         proxy_pass http://127.0.0.1:3001/;
@@ -88,8 +97,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
         
-        # Allow redirects from Next.js (important for root route redirect!)
-        # This ensures redirects like /login are properly forwarded
+        # Allow redirects from Next.js
         proxy_redirect http://127.0.0.1:3001/ /;
         proxy_redirect http://localhost:3001/ /;
         proxy_redirect http://$host:3001/ /;
@@ -107,7 +115,7 @@ server {
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
         
-        # Handle Next.js properly - don't intercept errors
+        # Handle Next.js properly
         proxy_intercept_errors off;
         
         # Retry on connection errors
@@ -115,21 +123,33 @@ server {
         proxy_next_upstream_tries 2;
     }
 }
-NGINX_EOF
 
-# Enable site if not already enabled
-if [ ! -L /etc/nginx/sites-enabled/tree-monitor ]; then
-    echo "Enabling Nginx site..."
-    ln -sf /etc/nginx/sites-available/tree-monitor /etc/nginx/sites-enabled/tree-monitor
-    echo "✓ Site enabled"
+IP_BLOCK
+)
+
+    # Check if config file exists
+    if [ ! -f "$NGINX_CONFIG" ]; then
+        echo "❌ Nginx config file not found: $NGINX_CONFIG"
+        exit 1
+    fi
+
+    # Check if IP block already exists (but without comment)
+    if grep -q "server_name 64.225.20.211 _" "$NGINX_CONFIG"; then
+        echo "⚠️  IP server block exists but may need update"
+        # Remove old IP block if it exists
+        sed -i '/# ESP8266 IP access/,/^}$/d' "$NGINX_CONFIG" 2>/dev/null || true
+    fi
+
+    # Prepend IP block to config (before domain HTTP redirect)
+    echo "$IP_SERVER_BLOCK" | cat - "$NGINX_CONFIG" > /tmp/nginx_merged.conf
+    mv /tmp/nginx_merged.conf "$NGINX_CONFIG"
+    
+    echo "✓ IP-based HTTP server block added"
 fi
 
-# Disable default site if it exists
-if [ -L /etc/nginx/sites-enabled/default ]; then
-    echo "Disabling default Nginx site..."
-    rm -f /etc/nginx/sites-enabled/default
-    echo "✓ Default site disabled"
-fi
+# Ensure domain HTTP server only redirects domains (not IP)
+echo "Updating domain HTTP server to only redirect domains..."
+sed -i 's/server_name nextree.app www.nextree.app 64.225.20.211 _;/server_name nextree.app www.nextree.app;/g' "$NGINX_CONFIG" || true
 
 # Test Nginx configuration
 echo "Testing Nginx configuration..."
@@ -143,23 +163,26 @@ if nginx -t; then
     
     echo ""
     echo "=========================================="
-    echo "Nginx configuration updated!"
+    echo "IP HTTP access fixed!"
     echo "=========================================="
     echo ""
-    echo "Test your application:"
-    echo "  Frontend (IP): http://64.225.20.211"
-    echo "  Frontend (Domain): http://nextree.app"
-    echo "  API (IP): http://64.225.20.211/api"
-    echo "  API (Domain): http://nextree.app/api"
-    echo "  Health: http://64.225.20.211/health"
+    echo "✅ Test endpoints:"
+    echo "   HTTP (IP): http://64.225.20.211"
+    echo "   API (IP):  http://64.225.20.211/api/v1/stats"
+    echo "   Health:    http://64.225.20.211/health"
     echo ""
-    echo "DNS tekshirish:"
-    echo "  nslookup nextree.app"
-    echo "  Kutilgan: 64.225.20.211"
+    echo "✅ Domain endpoints (HTTPS):"
+    echo "   HTTPS:     https://nextree.app"
+    echo "   HTTPS:     https://www.nextree.app"
+    echo ""
+    echo "✅ HTTP domains redirect to HTTPS"
+    echo "✅ IP address serves HTTP (for ESP8266)"
     echo ""
 else
     echo "❌ Nginx configuration has errors!"
-    echo "Please check the configuration manually"
+    echo "Restoring backup..."
+    if ls "${NGINX_CONFIG}.backup."* 1> /dev/null 2>&1; then
+        mv "${NGINX_CONFIG}.backup."* "$NGINX_CONFIG" 2>/dev/null || true
+    fi
     exit 1
 fi
-

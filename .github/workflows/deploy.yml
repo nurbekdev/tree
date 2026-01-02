@@ -299,8 +299,30 @@ jobs:
           echo "Checking service status..."
           docker compose --progress=plain -f docker-compose.prod.yml ps || true
           
-          # Nginx fix is optional and can be done separately if needed
-          # Skipping to save time during deployment
+          # Nginx configuration protection
+          # IMPORTANT: We do NOT modify Nginx config during deployment
+          # Nginx config is managed separately on the server
+          echo ""
+          echo "=========================================="
+          echo "Nginx Configuration Protection"
+          echo "=========================================="
+          if [ -f /etc/nginx/sites-available/tree-monitor ]; then
+            echo "✓ Nginx config exists: /etc/nginx/sites-available/tree-monitor"
+            echo "✓ Nginx config is NOT modified during deployment"
+            echo "✓ Current Nginx config is preserved"
+            
+            # Verify Nginx config is valid (read-only check)
+            if nginx -t > /dev/null 2>&1; then
+              echo "✓ Nginx configuration is valid"
+            else
+              echo "⚠️  Nginx config has errors (but not modified)"
+            fi
+          else
+            echo "⚠️  Nginx config not found (will not be created automatically)"
+            echo "   Run manually: sudo bash scripts/fix-domain-nginx.sh"
+          fi
+          echo "=========================================="
+          echo ""
           
           echo "Testing services..."
           BACKEND_READY=false
