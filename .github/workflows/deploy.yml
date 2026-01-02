@@ -109,8 +109,6 @@ jobs:
             # Disable other slow features
             KbdInteractiveAuthentication no
             PasswordAuthentication no
-            # Increase connection retry
-            ConnectAttempts 3
           EOF
           chmod 600 ~/.ssh/config
           
@@ -118,6 +116,7 @@ jobs:
             echo ""
             echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
             echo "Connecting to ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}..."
+            echo "Time: $(date)"
             
             # Test connection with increased timeout (90s connect + 10s command)
             # Use -v for verbose output only on first attempt
@@ -125,7 +124,13 @@ jobs:
             if [ $RETRY_COUNT -eq 0 ]; then
               SSH_VERBOSE="-v"
             fi
-            if timeout 100 ssh $SSH_VERBOSE ${{ secrets.SERVER_HOST }} \
+            
+            # Try connection with timeout
+            if timeout 100 ssh $SSH_VERBOSE \
+              -o ConnectTimeout=90 \
+              -o ServerAliveInterval=30 \
+              -o ServerAliveCountMax=6 \
+              ${{ secrets.SERVER_HOST }} \
               "echo 'SSH connection successful'" 2>&1 | tee /tmp/ssh_output.log; then
               echo ""
               echo "✓ SSH connection established successfully!"
