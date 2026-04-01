@@ -46,7 +46,19 @@ import {
   FaDocker,
   FaNetworkWired,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaDollarSign,
+  FaMapMarkerAlt,
+  FaUsers,
+  FaBuilding,
+  FaHandshake,
+  FaChartBar,
+  FaSeedling,
+  FaGlobeAsia,
+  FaLayerGroup,
+  FaMoneyBillWave,
+  FaTrophy,
+  FaExpand
 } from 'react-icons/fa'
 
 export default function LandingPage() {
@@ -54,6 +66,7 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [visibleSections, setVisibleSections] = useState(new Set())
   const [mounted, setMounted] = useState(false)
+  const [activeScenario, setActiveScenario] = useState(1)
 
   useEffect(() => {
     // Mark component as mounted to avoid hydration mismatch
@@ -193,8 +206,8 @@ export default function LandingPage() {
               >
                 Hardware
               </a>
-              <a 
-                href="#yol-xaritasi" 
+              <a
+                href="#yol-xaritasi"
                 className="text-gray-700 hover:text-green-600 transition"
                 onClick={(e) => {
                   e.preventDefault()
@@ -203,8 +216,18 @@ export default function LandingPage() {
               >
                 Yo'l xaritasi
               </a>
-              <Link 
-                href="/login" 
+              <a
+                href="#investitsiya"
+                className="text-gray-700 hover:text-green-600 transition font-semibold"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleNavClick('#investitsiya')
+                }}
+              >
+                💰 Investitsiya
+              </a>
+              <Link
+                href="/login"
                 className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition"
               >
                 Kirish
@@ -299,6 +322,18 @@ export default function LandingPage() {
                 >
                   <FaRocket className="mr-3 text-purple-600 group-hover:scale-110 transition-transform" />
                   <span className="group-hover:translate-x-1 transition-transform">Yo'l xaritasi</span>
+                </a>
+                <a
+                  href="#investitsiya"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleNavClick('#investitsiya')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="flex items-center px-6 py-4 text-gray-800 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-100 hover:text-emerald-700 active:bg-emerald-50 transition-all duration-200 font-bold border-l-4 border-transparent hover:border-emerald-600 group"
+                >
+                  <FaMoneyBillWave className="mr-3 text-emerald-600 group-hover:scale-110 transition-transform" />
+                  <span className="group-hover:translate-x-1 transition-transform">Investitsiya</span>
                 </a>
               </div>
               <div className="px-4 pt-3 pb-4 border-t-2 border-gray-100 bg-gradient-to-r from-green-50 via-green-100 to-green-50">
@@ -1259,6 +1294,485 @@ export default function LandingPage() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Investment Section */}
+      <section id="investitsiya" className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden" style={{ background: 'linear-gradient(160deg, #020c05 0%, #061508 20%, #0a2218 45%, #061508 75%, #020c05 100%)' }}>
+        {/* Premium background layers */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #22c55e 0%, transparent 70%)' }}></div>
+          <div className="absolute -bottom-40 -right-40 w-[700px] h-[700px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #10b981 0%, transparent 70%)' }}></div>
+          <div className="absolute top-1/2 left-1/2 w-[900px] h-[900px] rounded-full opacity-5 -translate-x-1/2 -translate-y-1/2" style={{ background: 'radial-gradient(circle, #4ade80 0%, transparent 60%)' }}></div>
+          {/* Grid pattern */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#22c55e 1px, transparent 1px), linear-gradient(90deg, #22c55e 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+
+          {/* ── 1. SECTION HEADER ── */}
+          <div className="text-center mb-16 fade-in-section">
+            <div className="inline-flex items-center gap-2 border rounded-full px-5 py-2.5 mb-7" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.2)' }}>
+              <FaRocket className="text-green-400 text-xs" />
+              <span className="text-green-400 font-semibold text-xs tracking-[0.18em] uppercase">Investitsiya Taklifi · 2025</span>
+            </div>
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-white mb-5 leading-[1.05] tracking-tight">
+              Dala Qo'riqchisi
+              <span className="block mt-1" style={{ backgroundImage: 'linear-gradient(90deg,#4ade80,#34d399,#6ee7b7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Investitsiya Rejasi
+              </span>
+            </h2>
+            <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+              Mirzo Ulug'bek tumani — Toshkentning birinchi aqlli yashil monitoring hududiga aylanadi.
+              Haqiqiy raqamlar. Haqiqiy iqtisodiy samara.
+            </p>
+          </div>
+
+          {/* ── 2. DEVICE COST TABLE ── */}
+          <div className="mb-16 fade-in-section">
+            <div className="rounded-3xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(74,222,128,0.15)' }}>
+              <div className="px-8 py-5 flex items-center gap-3" style={{ background: 'rgba(74,222,128,0.06)', borderBottom: '1px solid rgba(74,222,128,0.1)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(74,222,128,0.15)' }}>
+                  <FaMicrochip className="text-green-400 text-sm" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Bitta Qurilma Narxi</h3>
+                <span className="ml-auto text-xs px-3 py-1 rounded-full font-semibold" style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>
+                  1 qurilma = 10–15 daraxt
+                </span>
+              </div>
+              <div className="p-6 md:p-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Table */}
+                  <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
+                          <th className="text-left px-4 py-3 text-gray-400 font-semibold text-xs uppercase tracking-wider">Komponent</th>
+                          <th className="text-right px-4 py-3 text-gray-400 font-semibold text-xs uppercase tracking-wider">UZS</th>
+                          <th className="text-right px-4 py-3 text-green-400 font-semibold text-xs uppercase tracking-wider">USD</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { name: 'ESP32 mikrokontroller', uzs: '80,000', usd: '~$6.5' },
+                          { name: 'NRF24L01+ radio modul', uzs: '25,000', usd: '~$2' },
+                          { name: 'Namlik sensori', uzs: '15,000', usd: '~$1.2' },
+                          { name: 'Harorat sensori', uzs: '12,000', usd: '~$1' },
+                          { name: "Qobiq (3D print)", uzs: '35,000', usd: '~$2.9' },
+                          { name: 'PCB + kabel', uzs: '33,000', usd: '~$2.7' },
+                          { name: "O'rnatish xizmati", uzs: '50,000', usd: '~$4' },
+                        ].map((row, i) => (
+                          <tr key={i} className="border-t transition-colors hover:bg-white/[0.03]" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                            <td className="px-4 py-3 text-gray-300">{row.name}</td>
+                            <td className="px-4 py-3 text-right text-gray-400 font-mono text-xs">{row.uzs} so'm</td>
+                            <td className="px-4 py-3 text-right text-green-400 font-bold">{row.usd}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t-2" style={{ borderColor: 'rgba(74,222,128,0.3)', background: 'rgba(74,222,128,0.07)' }}>
+                          <td className="px-4 py-4 text-white font-black text-base">JAMI (1 qurilma)</td>
+                          <td className="px-4 py-4 text-right text-gray-200 font-bold font-mono">250,000 so'm</td>
+                          <td className="px-4 py-4 text-right font-black text-lg" style={{ color: '#4ade80' }}>~$20.8</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Right panel */}
+                  <div className="flex flex-col gap-4">
+                    <div className="flex-1 rounded-2xl p-6 flex flex-col justify-center" style={{ background: 'linear-gradient(135deg, rgba(74,222,128,0.1), rgba(16,185,129,0.06))', border: '1px solid rgba(74,222,128,0.2)' }}>
+                      <div className="text-gray-400 text-xs uppercase tracking-widest mb-3">Bitta qurilma qoplaydigan hudud</div>
+                      <div className="text-5xl font-black text-white mb-1">10–15</div>
+                      <div className="text-green-400 font-semibold text-lg">daraxt / qurilma</div>
+                      <div className="mt-5 pt-4 border-t border-white/10 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Bitta o'rnatilgan qurilma:</span>
+                          <span className="text-white font-bold">250,000 so'm</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Yillik texnik xizmat:</span>
+                          <span className="text-white font-bold">30,000 so'm (~$2.5)</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div className="flex items-start gap-3">
+                        <FaCheckCircle className="text-green-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-gray-300 text-sm leading-relaxed">
+                          Quyosh paneli bilan to'liq avtonom ishlaydi — elektr tarmog'iga ulash shart emas
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div className="flex items-start gap-3">
+                        <FaCheckCircle className="text-green-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-gray-300 text-sm leading-relaxed">
+                          NRF24L01 mesh-tarmoq: bitta qurilma 800m gacha signal uzatadi
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 3. HERO STATS ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-16 fade-in-section">
+            {[
+              { icon: FaMapMarkerAlt, value: '37.5', unit: 'km²', label: "Mirzo Ulug'bek", sub: 'Tuman aholisi', c: '#4ade80' },
+              { icon: FaUsers, value: '~280,000', unit: '', label: 'Aholi soni', sub: 'Tuman aholisi', c: '#34d399' },
+              { icon: FaTree, value: '18,500+', unit: '', label: 'Daraxtlar', sub: 'Monitoring ob\'ektlari', c: '#6ee7b7' },
+              { icon: FaMicrochip, value: '120', unit: '', label: 'Pilot qurilma', sub: 'Boshlang\'ich bosqich', c: '#a7f3d0', highlight: true },
+            ].map((s, i) => (
+              <div key={i} className="relative rounded-2xl p-6 md:p-7 transition-all duration-300 hover:scale-105 group"
+                style={{ background: s.highlight ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${s.c}25` }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: `${s.c}18` }}>
+                  <s.icon style={{ color: s.c }} className="text-sm" />
+                </div>
+                <div className="text-3xl md:text-4xl font-black text-white mb-1 leading-none">
+                  {s.value}<span className="text-xl" style={{ color: s.c }}>{s.unit}</span>
+                </div>
+                <div className="text-white font-semibold text-sm mb-0.5">{s.label}</div>
+                <div className="text-gray-500 text-xs">{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── 4. PHASE TIMELINE ── */}
+          <div className="mb-16 fade-in-section">
+            <div className="text-center mb-10">
+              <h3 className="text-3xl md:text-4xl font-black text-white mb-2">3 Bosqichli Joriy Etish Rejasi</h3>
+              <p className="text-gray-400">Mirzo Ulug'bek tumani — 18 oy, 1,850 qurilma, 18,500 daraxt</p>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6 mb-8">
+              {[
+                {
+                  num: '01', phase: 'BOSQICH 1', title: 'PILOT', months: '0–3 oy',
+                  devices: 120, trees: '1,200–1,800', coverage: "Mirzo Ulug'bek markaziy parklari",
+                  rows: [
+                    ['120 qurilma × 250,000 so\'m', '30,000,000', '$2,500'],
+                    ["O'rnatish (120 × 50,000)", '6,000,000', '$500'],
+                    ['Server & platforma (3 oy)', '2,400,000', '$200'],
+                    ['Jamoa (2 kishi, 3 oy)', '10,800,000', '$900'],
+                  ],
+                  total_uzs: '49,200,000', total_usd: '$3,000',
+                  highlight: true, badge: 'HOZIR SO\'RALMOQDA', c: '#4ade80',
+                },
+                {
+                  num: '02', phase: 'BOSQICH 2', title: 'KENGAYTIRISH', months: '3–9 oy',
+                  devices: 380, trees: '5,000', coverage: "Ko'cha daraxtlari va mahallalar",
+                  rows: [
+                    ['380 qurilma × 250,000 so\'m', '95,000,000', '$7,916'],
+                    ["O'rnatish (380 × 50,000)", '19,000,000', '$1,583'],
+                    ['Infratuzilma', '12,000,000', '$1,000'],
+                    ['Jamoa (6 oy)', '21,600,000', '$1,800'],
+                  ],
+                  total_uzs: '147,600,000', total_usd: '$12,300',
+                  highlight: false, c: '#34d399',
+                },
+                {
+                  num: '03', phase: 'BOSQICH 3', title: "TO'LIQ QOPLASH", months: '9–18 oy',
+                  devices: 1350, trees: '18,500', coverage: "Barcha yashil zonalar va o'rmonlar",
+                  rows: [
+                    ['1,350 qurilma × 250,000 so\'m', '337,500,000', '$28,125'],
+                    ["O'rnatish (1,350 × 50,000)", '67,500,000', '$5,625'],
+                    ['Platforma yillik ops', '30,000,000', '$2,500'],
+                    ['Jamoa (9 oy)', '32,400,000', '$2,700'],
+                  ],
+                  total_uzs: '467,400,000', total_usd: '$38,950',
+                  highlight: false, c: '#6ee7b7',
+                },
+              ].map((p, idx) => (
+                <div key={idx} className={`relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]`}
+                  style={{ background: p.highlight ? 'rgba(74,222,128,0.07)' : 'rgba(255,255,255,0.03)', border: p.highlight ? `2px solid ${p.c}60` : `1px solid rgba(255,255,255,0.07)`, boxShadow: p.highlight ? `0 0 40px ${p.c}18` : 'none' }}>
+                  {p.highlight && (
+                    <div className="py-2 text-center text-xs font-black tracking-[0.2em] text-black" style={{ background: `linear-gradient(90deg, ${p.c}, #34d399)` }}>
+                      {p.badge}
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: p.c }}>{p.phase} · {p.months}</div>
+                        <div className="text-xl font-black text-white">{p.title}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-black text-white">{p.devices.toLocaleString()}</div>
+                        <div className="text-gray-500 text-xs">qurilma</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mb-5 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                      <FaMapMarkerAlt style={{ color: p.c }} className="flex-shrink-0 text-xs" />
+                      <span className="text-gray-300">{p.coverage} · {p.trees} daraxt</span>
+                    </div>
+                    <div className="rounded-xl overflow-hidden mb-4" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+                      {p.rows.map((r, i) => (
+                        <div key={i} className="flex justify-between items-center px-4 py-2.5 text-xs border-t first:border-0" style={{ borderColor: 'rgba(255,255,255,0.05)', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                          <span className="text-gray-400 leading-tight">{r[0]}</span>
+                          <div className="text-right ml-2 flex-shrink-0">
+                            <div className="text-white font-semibold">{r[2]}</div>
+                            <div className="text-gray-600" style={{ fontSize: '10px' }}>{r[1]} UZS</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="rounded-xl px-4 py-3.5 flex justify-between items-center" style={{ background: p.highlight ? `${p.c}15` : 'rgba(255,255,255,0.05)', border: p.highlight ? `1px solid ${p.c}30` : '1px solid rgba(255,255,255,0.07)' }}>
+                      <span className="text-gray-300 font-semibold text-sm">Bosqich jami:</span>
+                      <div className="text-right">
+                        <div className="font-black text-xl" style={{ color: p.c }}>{p.total_usd}</div>
+                        <div className="text-gray-500 text-xs">{p.total_uzs} so'm</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Grand total bar */}
+            <div className="rounded-2xl p-6 md:p-8" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="grid md:grid-cols-4 gap-6 text-center">
+                {[
+                  { label: 'Jami qurilma', val: '1,850', sub: '18,500 daraxt', c: '#4ade80' },
+                  { label: 'Jami muddat', val: '18 oy', sub: '3 bosqich', c: '#34d399' },
+                  { label: 'Jami xarajat (UZS)', val: '664.2 mln', sub: "so'm", c: '#6ee7b7' },
+                  { label: 'Jami xarajat (USD)', val: '$55,350', sub: 'to\'liq tuman', c: '#a7f3d0', big: true },
+                ].map((g, i) => (
+                  <div key={i} className={`${g.big ? 'md:border-l' : ''}`} style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <div className="text-gray-400 text-xs uppercase tracking-widest mb-2">{g.label}</div>
+                    <div className={`font-black text-white ${g.big ? 'text-4xl' : 'text-3xl'}`} style={g.big ? { color: g.c } : {}}>{g.val}</div>
+                    <div className="text-gray-500 text-xs mt-1">{g.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── 5. $3,000 SEED FOCUS CARD ── */}
+          <div className="mb-16 fade-in-section flex justify-center">
+            <div className="w-full max-w-3xl rounded-3xl overflow-hidden relative"
+              style={{ background: 'linear-gradient(135deg, #071a0d, #0d2b15, #071a0d)', border: '2px solid #4ade80', boxShadow: '0 0 60px rgba(74,222,128,0.25), 0 0 120px rgba(74,222,128,0.1), inset 0 0 60px rgba(74,222,128,0.03)' }}>
+              {/* Glow top line */}
+              <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, transparent, #4ade80, #34d399, #4ade80, transparent)' }}></div>
+
+              <div className="p-8 md:p-12">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-xs font-bold uppercase tracking-widest text-black" style={{ background: 'linear-gradient(90deg, #4ade80, #34d399)' }}>
+                    <FaDollarSign className="text-xs" />
+                    Seed Investitsiya — Hozir Kerak
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-black text-white mb-2">
+                    Biz Hozir Nimani So'rayapmiz?
+                  </h3>
+                </div>
+
+                {/* Big pulsing number */}
+                <div className="text-center mb-8 relative">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-48 h-48 rounded-full animate-pulse" style={{ background: 'radial-gradient(circle, rgba(74,222,128,0.15) 0%, transparent 70%)' }}></div>
+                  </div>
+                  <div className="relative">
+                    <div className="text-7xl md:text-8xl lg:text-9xl font-black animate-pulse" style={{ color: '#4ade80', textShadow: '0 0 40px rgba(74,222,128,0.5), 0 0 80px rgba(74,222,128,0.2)' }}>
+                      $3,000
+                    </div>
+                    <div className="text-xl text-gray-300 font-semibold mt-2">49,200,000 so'm</div>
+                  </div>
+                </div>
+
+                {/* 4 checkpoints */}
+                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                  {[
+                    '120 ta aqlli qurilma ishlab chiqarish',
+                    "Mirzo Ulug'bek parklarida o'rnatish va test",
+                    '3 oylik real monitoring va ma\'lumot yig\'ish',
+                    "Investorlar uchun to'liq hisobot va natijalar",
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.15)' }}>
+                      <FaCheckCircle className="text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-200 text-sm font-medium">{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Quote */}
+                <div className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div className="text-3xl text-green-400 font-black leading-none mb-3 opacity-50">"</div>
+                  <p className="text-gray-300 text-base leading-relaxed italic">
+                    Bu $3,000 bizga real natijalarni isbotlash imkonini beradi.
+                    Natijalar asosida keyingi <span className="text-green-400 font-bold not-italic">$12,300</span> kengaytirish bosqichiga
+                    o'tamiz va butun Mirzo Ulug'bek tumanini qoplab,
+                    Toshkent miqyosiga chiqamiz.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 6. FUND ALLOCATION ── */}
+          <div className="mb-16 fade-in-section">
+            <div className="rounded-3xl p-8 md:p-10" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.15)' }}>
+                  <FaLayerGroup className="text-purple-400 text-sm" />
+                </div>
+                <div>
+                  <div className="text-purple-400 text-xs font-semibold uppercase tracking-widest">$3,000 seed round</div>
+                  <h3 className="text-xl font-bold text-white">Mablag' Taqsimoti</h3>
+                </div>
+              </div>
+
+              {/* Visual segmented bar */}
+              <div className="mb-8">
+                <div className="flex rounded-xl overflow-hidden h-10 gap-0.5 mb-4">
+                  {[
+                    { pct: 61, color: '#4ade80', label: 'Hardware' },
+                    { pct: 12, color: '#60a5fa', label: "O'rnatish" },
+                    { pct: 5,  color: '#a78bfa', label: 'Server' },
+                    { pct: 22, color: '#fbbf24', label: 'Jamoa' },
+                  ].map((seg, i) => (
+                    <div key={i} className="flex items-center justify-center transition-all duration-700 hover:brightness-110 cursor-default text-black font-bold text-xs"
+                      style={{ width: `${seg.pct}%`, background: seg.color, minWidth: i === 2 ? '32px' : undefined }}>
+                      {seg.pct >= 10 ? `${seg.pct}%` : ''}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {[
+                    { c: '#4ade80', label: "Hardware & ishlab chiqarish", pct: 61, usd: '$1,836' },
+                    { c: '#60a5fa', label: "O'rnatish & logistika", pct: 12, usd: '$366' },
+                    { c: '#a78bfa', label: 'Server & platforma', pct: 5, usd: '$144' },
+                    { c: '#fbbf24', label: 'Jamoa & operatsiyalar', pct: 22, usd: '$654' },
+                  ].map((seg, i) => (
+                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                      <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: seg.c }}></div>
+                      <span className="text-gray-300">{seg.label}</span>
+                      <span className="font-black" style={{ color: seg.c }}>{seg.usd}</span>
+                      <span className="text-gray-600">({seg.pct}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Breakdown rows */}
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { icon: FaMicrochip, label: "Hardware & ishlab chiqarish", pct: 61, usd: '$1,836', c: '#4ade80' },
+                  { icon: FaCode,     label: "O'rnatish & logistika",       pct: 12, usd: '$366',   c: '#60a5fa' },
+                  { icon: FaServer,   label: 'Server & platforma',          pct: 5,  usd: '$144',   c: '#a78bfa' },
+                  { icon: FaUsers,    label: 'Jamoa & operatsiyalar',       pct: 22, usd: '$654',   c: '#fbbf24' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${item.c}15` }}>
+                      <item.icon className="text-sm" style={{ color: item.c }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-gray-300 text-sm font-medium mb-1.5">{item.label}</div>
+                      <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                        <div className="h-full rounded-full" style={{ width: `${item.pct}%`, background: item.c }}></div>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <div className="font-black" style={{ color: item.c }}>{item.usd}</div>
+                      <div className="text-gray-600 text-xs">{item.pct}%</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── 7. MARKET OPPORTUNITY ── */}
+          <div className="mb-16 fade-in-section">
+            <div className="text-center mb-10">
+              <h3 className="text-3xl md:text-4xl font-black text-white mb-2">Bozor Imkoniyati</h3>
+              <p className="text-gray-400">Bitta tumanidan milliy miqyosgacha o'sish yo'li</p>
+            </div>
+
+            {/* 3 scale cards with arrows */}
+            <div className="grid md:grid-cols-3 gap-4 mb-10 relative">
+              {[
+                { scope: "Mirzo Ulug'bek", type: 'SOM · Hozirgi maqsad', icon: FaMapMarkerAlt, n1: '1 tuman', n2: '18,500 daraxt', n3: '$38,950', n4: '1,850 qurilma', c: '#4ade80', active: true },
+                { scope: 'Toshkent', type: 'SAM · Keyingi bosqich', icon: FaBuilding, n1: '11 tuman', n2: '~200,000 daraxt', n3: '~$430,000', n4: '~20,350 qurilma', c: '#34d399', active: false },
+                { scope: "O'zbekiston", type: 'TAM · Kelajak bozor', icon: FaGlobeAsia, n1: 'Barcha shaharlar', n2: '1,000,000+ daraxt', n3: '~$2,100,000+', n4: '100,000+ qurilma', c: '#6ee7b7', active: false },
+              ].map((m, idx) => (
+                <div key={idx} className="relative">
+                  {idx < 2 && (
+                    <div className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full items-center justify-center" style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)' }}>
+                      <FaArrowRight className="text-green-400 text-xs" />
+                    </div>
+                  )}
+                  <div className="rounded-2xl p-6 h-full transition-all duration-300 hover:scale-105"
+                    style={{ background: m.active ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.03)', border: m.active ? `1px solid ${m.c}40` : '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${m.c}15` }}>
+                        <m.icon style={{ color: m.c }} className="text-sm" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: m.c }}>{m.type}</div>
+                        <div className="text-lg font-black text-white">{m.scope}</div>
+                      </div>
+                    </div>
+                    <div className="space-y-2.5 mb-5">
+                      {[m.n1, m.n2, m.n4].map((v, vi) => (
+                        <div key={vi} className="text-gray-300 text-sm">{v}</div>
+                      ))}
+                    </div>
+                    <div className="pt-4 border-t" style={{ borderColor: `${m.c}20` }}>
+                      <div className="text-gray-400 text-xs mb-1">Bozor hajmi</div>
+                      <div className="text-2xl font-black" style={{ color: m.c }}>{m.n3}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Revenue streams */}
+            <div className="grid md:grid-cols-3 gap-5">
+              {[
+                { emoji: '🏛️', model: 'B2G SaaS', desc: 'Shahar hokimligi obuna to\'lovi — yillik shartnoma asosida barqaror daromad' },
+                { emoji: '🌱', model: 'Carbon Credits', desc: 'Sog\'lom daraxtlar CO₂ yutadi — carbon kredit bozorida sotiladi' },
+                { emoji: '📊', model: "Ma'lumot Analitikasi", desc: "Ekologik hisobotlar va real-vaqt monitoring ma'lumotlari sotiladi" },
+              ].map((r, i) => (
+                <div key={i} className="rounded-2xl p-6 transition-all duration-300 hover:scale-105 hover:bg-white/[0.06]" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="text-3xl mb-3">{r.emoji}</div>
+                  <div className="text-white font-bold mb-2">{r.model}</div>
+                  <p className="text-gray-400 text-sm leading-relaxed">{r.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 8. BOTTOM CTA ── */}
+          <div className="fade-in-section">
+            <div className="rounded-3xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #071a0d, #0a2218, #071a0d)', border: '1px solid rgba(74,222,128,0.2)', boxShadow: '0 0 80px rgba(74,222,128,0.08)' }}>
+              <div className="p-10 md:p-16 text-center">
+                <div className="text-4xl mb-5">🌿</div>
+                <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 leading-tight">
+                  Loyihaga Qo'shiling
+                </h3>
+                <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                  Dala Qo'riqchisi — O'zbekiston yashil kelajagining texnologik asosi
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
+                  <a href="mailto:nurbekpolatov03@gmail.com"
+                    className="inline-flex items-center justify-center gap-3 font-bold px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105 text-black text-lg"
+                    style={{ background: 'linear-gradient(135deg,#4ade80,#34d399)', boxShadow: '0 8px 30px rgba(74,222,128,0.3)' }}>
+                    <FaMoneyBillWave />
+                    Investitsiya So'rovi →
+                  </a>
+                  <a href="mailto:nurbekpolatov03@gmail.com"
+                    className="inline-flex items-center justify-center gap-3 font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105 text-white text-lg"
+                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                    <FaChartBar />
+                    To'liq Biznes Reja →
+                  </a>
+                </div>
+                <div className="text-gray-500 text-sm">
+                  Rahimov School Robototexnika jamoasi | Toshkent, O'zbekiston
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 

@@ -54,7 +54,7 @@ export default function Logo({ size = 60, className = '' }) {
   return (
     <div className={`flex items-center ${className}`} style={{ width: size, height: size }}>
       <Image
-        src="/LOGO.png"
+        src="/LOGO1.png"
         alt="Dala Qo'riqchisi Logo"
         width={size}
         height={size}
